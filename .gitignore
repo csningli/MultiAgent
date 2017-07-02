@@ -1,5 +1,10 @@
 # Vim temporaries 
 *.swp
+*.out
+*.log
+*.aux
+*.tex
+*.bib
 
 # fossil accessories
 .fslckout
@@ -14,7 +19,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-doc/
 env/
 build/
 develop-eggs/
