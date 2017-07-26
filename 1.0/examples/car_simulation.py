@@ -15,26 +15,18 @@ class CarProcessModule(Module) :
     def perform(self, msg, ram) :
         self.result["local"] = {}
         self.result["post"] = {}
-        force = 10.0
+        vel = 30.0
+        avel = 1.0
         index = 0
         timer_value = msg.get("timer_value", None)
-        pos_x = msg.get("pos_x", None)
-        pos_y = msg.get("pos_y", None)
-        vel_x = msg.get("vel_x", None)
-        vel_y = msg.get("vel_y", None)
-        if None not in [timer_value, pos_x, pos_y, vel_x, vel_y] :
+        if None not in [timer_value, ] :
             index = int(math.floor(timer_value / 10.0)) % 4 
-            pos_x = msg.get("pos_x", None)
-            pos_y = msg.get("pos_y", None)
-            vec = (self.targets[index][0] - float(pos_x), self.targets[index][1] - float(pos_y))
-            norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
-            if norm > 0.1 :
-                self.result["local"]["forces"] = (vec[0] * force, vec[1] * force)
+            self.result["local"]["moves"] = (self.targets[index][0], self.targets[index][1], vel, avel)
         return self.result
 
 class CarObject(Object) :
     def __init__(self, name) :
-        mods = [CarProcessModule(), MotionModule(), TimeSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), CommunicateModule()]
+        mods = [CarProcessModule(), MotionModule(), DriveModule(), TimeSensorModule(), MassSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), CommunicateModule()]
         super(CarObject, self).__init__(name = name, mods = mods)
 
     def step(self, obj_data = None) :
@@ -42,23 +34,28 @@ class CarObject(Object) :
         self.info("Object %s's status: %s" % (self.name, self.status))
 
 class CarContext(Context) :
-    def draw(self, screen, font) :
-        super(CarContext, self).draw(screen, font)
+    def draw(self, screen) :
+        super(CarContext, self).draw(screen)
 
         # draw the name above each unit
-        
+        font = pygame.font.Font(None, 16)
         for unit in self.units.values() :
             if unit.shape is not None :
-                r = unit.shape.get_range()
-                p = unit.get_position()
-                (width, height) = screen.get_size()
-                p[0] = int(width / 2.0 + p[0] - 5.0) 
-                p[1] = int(height / 2.0 - p[1] - r[1] - 10.0) 
-                screen.blit(font.render(unit.name, 1, THECOLORS["black"]), p)
+                if unit.name.isdigit() :
+                    r = unit.shape.get_range()
+                    p = unit.get_position()
+                    (width, height) = screen.get_size()
+                    p[0] = int(width / 2.0 + p[0] - 5.0) 
+                    p[1] = int(height / 2.0 - p[1] - r[1] - 10.0) 
+                    screen.blit(font.render(unit.name, 1, THECOLORS["black"]), p)
  
  
 car_objects = []
 car_units = []
+scene_units = []
+
+wall = Unit(name = "wall", shape = SegmentShape((0, -50), (200, -50)))
+scene_units.append(wall)
 
 patrol_car = CarObject(name = "0")
 patrol_unit = Unit(name = patrol_car.name)
@@ -67,7 +64,7 @@ patrol_unit.set_position((0.0, 0.0))
 car_objects.append(patrol_car)
 car_units.append(patrol_unit)
     
-car_context = CarContext(delta = 1.0 / 50.0, units = car_units)
+car_context = CarContext(delta = 1.0 / 50.0, units = car_units + scene_units)
 car_driver = Driver(context = car_context, objects = car_objects, data = Data())
 car_simulator = Simulator(driver = car_driver)
 

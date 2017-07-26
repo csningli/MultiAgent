@@ -1,12 +1,12 @@
 
-import sys, os, time, datetime, json
+import sys, os, time, datetime, json, math
 import pygame
 from pygame.locals import * 
 from pygame.color import *
 
 import pymunkoptions
 pymunkoptions.options["debug"] = False
-from pymunk import Circle, Body, Space, Vec2d
+from pymunk import Circle, Segment, Body, Space, Vec2d
 
 def append_to_sys_path(path = None) :
     if path is None :
@@ -100,99 +100,6 @@ class Logger(object) :
     def error(self, line, show = False) :
         self.log(line = line, label = "ERROR", show = show)
 
-#
-# Modules
-#
-
-class Module(Logger) :
-    def __init__(self) :
-        self.result = {"local" : {}, "post" : {}, "ram" : {}}
-    def perform(self, msg, ram) :
-        for key in self.result.keys() :
-            self.result[key] = {}
-        for (key, value) in msg.items() :
-            if self.result["post"].get(key, None) is None :
-                self.result["post"][key] = "" 
-            self.result["post"][key] += str(value)
-        for (key, value) in ram.items() :
-            if self.result["ram"].get(key, None) is None :
-                self.result["ram"][key] = ""
-            self.result["ram"][key] += str(value)
-        return self.result
-
-
-class MotionModule(Module) :        # simulate the motion interface 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        forces = msg.get("forces", None)
-        if forces is not None and len(forces) > 0 :
-            x = 0.0
-            y = 0.0
-            for force in forces:
-                x += force[0]
-                y += force[1]
-            self.result["post"]["force"] = (x, y) 
-        
-        spins = msg.get("spins", None)
-        if spins is not None and len(spins) > 0 :
-            s = 0.0
-            for spin in spins:
-                s += spin
-            self.result["post"]["spin"] = s 
-        return self.result
-
-
-class CommunicateModule(Module) :   # simulate the communication interface 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        packets = msg.get('packets', None)
-        if packets is not None and len(packets) > 0 :
-            transmit = ""
-            for packet in packets:
-                transmit = transmit + packet + ";"
-            self.result['post']['transmit'] = transmit
-        return self.result
-
-
-class ProcessModule(Module) :       # simulate the process action interface
-    pass
-
-
-class SensorModule(Module) :        # simulate the sensing action interface
-    pass
-
-
-class TimeSensorModule(SensorModule) :    # query for the global time 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']['time'] = ""
-        return self.result
-        
-
-class PositionSensorModule(SensorModule) :    # query for the position  
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']['position'] = ""
-        return self.result
-        
-        
-class AngleSensorModule(SensorModule) :    # query for the angle (counter clock from east) 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']['angle'] = ""
-        return self.result
-
-class VelocitySensorModule(SensorModule) :    # query for the velocity 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']["velocity"] = ""
-        return self.result
-
-class AngularVelSensorModule(SensorModule) :    # query for the angular velocity
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']["angular_velocity"] = ""
-        return self.result
 
 #
 # Objects
@@ -250,13 +157,88 @@ class Object(Logger) :
         pass
 
 
-class Agent(Object) :
-    pass
+class BasicShape(Logger) :
+    stroke_color = THECOLORS["blue"]
+    fill_color = THECOLORS["blue"]
+    pointer_color = THECOLORS["red"]
     
+    def set_stroke_color(self, color) :
+        self.stroke_color = color 
 
-class CircleShape(Logger, Circle) : 
+    def get_stroke_color(self) :
+        return self.stroke_color
 
-    def draw(self, screen, font) :
+    def set_fill_color(self, color) :
+        fill_color = color 
+
+    def get_fill_color(self) :
+        return self.fill_color
+
+    def set_pointer_color(self, color) :
+        self.pointer_color = color 
+
+    def get_pointer_color(self) :
+        return self.pointer_color
+     
+    def draw(self, screen) :
+        pass
+
+    def get_range(self) :
+        return (1.0, 1.0)
+
+    def get_position(self) :
+        return (0.0, 0.0)
+        
+    def set_position(self, position) :
+        pass
+
+    def get_mass(self) :
+        return 0
+        
+    def get_angle(self) :
+        return 0
+        
+    def set_angle(self, angle) :
+        pass
+
+    def get_velocity(self) :
+        return (0.0, 0.0) 
+
+    def get_angular_velocity(self) :
+        return 0.0 
+
+    def apply_force(self, force) :
+        pass
+
+    def apply_spin(self, spin) :
+        pass
+        
+class SegmentShape(BasicShape, Segment) : 
+    def __init__(self, a, b) :
+        super(SegmentShape, self).__init__(Body(body_type=Body.STATIC), a, b, 0.0)
+        self.friction = 1.0
+        self.collision_type = 0  
+
+    def draw(self, screen) :
+        (width, height) = screen.get_size()
+        (pv1, pv2) = self.get_ends()
+        pv1[0] = int(width / 2.0 + pv1[0]) 
+        pv1[1] = int(height / 2.0 - pv1[1]) 
+        pv2[0] = int(width / 2.0 + pv2[0]) 
+        pv2[1] = int(height / 2.0 - pv2[1])
+        pygame.draw.lines(screen, self.stroke_color, False, [pv1, pv2])
+    
+    def get_position(self) :
+        return self.body.position 
+
+    def get_ends(self) :
+        body = self.body
+        pv1 = body.position + self.a.cpvrotate(body.rotation_vector)
+        pv2 = body.position + self.b.cpvrotate(body.rotation_vector)
+        return (pv1, pv2) 
+
+class CircleShape(BasicShape, Circle) : 
+    def draw(self, screen) :
         r = self.radius
         p = self.body.position
         rot = self.body.rotation_vector
@@ -268,9 +250,13 @@ class CircleShape(Logger, Circle) :
         p[1] = int(height / 2.0 - p[1]) 
 
         head = Vec2d(rot.x, -rot.y) * r * 0.9
-        pygame.draw.circle(screen, THECOLORS["blue"], p, int(r), 2)
-        pygame.draw.line(screen, THECOLORS["red"], p, p + head)
+        pygame.draw.circle(screen, self.stroke_color, p, int(r), 2)
+        pygame.draw.circle(screen, self.fill_color, p, int(r/2.0), 4)
+        pygame.draw.line(screen, self.pointer_color, p, p + head)
 
+    def get_mass(self) :
+        return self.body.mass
+        
     def get_position(self) :
         return self.body.position 
         
@@ -292,7 +278,7 @@ class CircleShape(Logger, Circle) :
         
     def get_range(self) :
         return (self.radius, self.radius) 
-
+        
     def get_velocity(self) :
         velocity = self.body.velocity
         return (velocity.x, velocity.y) 
@@ -340,6 +326,9 @@ class Unit(Logger) :
     def set_position(self, position) :
         self.shape.set_position(position)
 
+    def get_mass(self) :
+        return self.shape.get_mass()
+        
     def get_angle(self) :
         return self.shape.get_angle()
         
@@ -352,13 +341,30 @@ class Unit(Logger) :
     def get_angular_velocity(self) :
         return self.shape.get_angular_velocity()
 
-
     def apply_force(self, force) :
         self.shape.apply_force(force)
 
     def apply_spin(self, spin) :
         self.shape.apply_spin(spin)
+        
+    def get_stroke_color(self) :
+        return self.shape.get_stroke_color()
 
+    def set_stroke_color(self, color) :
+        self.shape.set_stroke_color(color)
+
+    def get_fill_color(self) :
+        return self.shape.get_fill_color()
+
+    def set_fill_color(self, color) :
+        self.shape.set_fill_color(color)
+
+    def get_pointer_color(self) :
+        return self.shape.get_pointer_color()
+        
+    def set_pointer_color(self, color) :
+        self.shape.set_pointer_color(color)
+        
 #
 # Oracle
 #
@@ -543,6 +549,15 @@ class Context(Logger) :
                 spin = obj_intention.get('spin', None)
                 if spin is not None :
                     self.units[obj_name].apply_spin(spin)
+                stroke = obj_intention.get("stroke", None)
+                if stroke is not None :
+                    self.units[obj_name].set_stroke_color(stroke)
+                fill = obj_intention.get("fill", None)
+                if fill is not None :
+                    self.units[obj_name].set_fill_color(fill)
+                pointer = obj_intention.get("pointer", None)
+                if pointer is not None :
+                    self.units[obj_name].set_pointer_color(pointer)
 
         # physics engine step 
         
@@ -557,6 +572,7 @@ class Context(Logger) :
                     self.confirm[obj_name] = {}
                     
                 time_query = obj_intention.get('time', None)
+                mass_query = obj_intention.get("mass", None)
                 pos_query = obj_intention.get('position', None)
                 angle_query = obj_intention.get('angle', None)
                 velocity_query = obj_intention.get('velocity', None)
@@ -566,6 +582,8 @@ class Context(Logger) :
                     self.confirm[obj_name]['timer_value'] = self.timer.value
 
                 if self.units.get(obj_name, None) is not None : 
+                    if mass_query is not None : 
+                        self.confirm[obj_name]["mass"] = self.units[obj_name].get_mass()
                     if pos_query is not None : 
                         pos = self.units[obj_name].get_position()
                         self.confirm[obj_name]['pos_x'] = pos[0]
@@ -590,6 +608,12 @@ class Context(Logger) :
                 step_data[name]['pos_x'] = pos[0]
                 step_data[name]['pos_y'] = pos[1]
                 step_data[name]['angle'] = angle
+                stroke = unit.get_stroke_color()  
+                step_data[name]["stroke"] = "%f %f %f" % (stroke[0], stroke[1], stroke[2])
+                fill = unit.get_fill_color()  
+                step_data[name]["fill"] = "%f %f %f" % (fill[0], fill[1], fill[2])
+                pointer = unit.get_pointer_color()  
+                step_data[name]["pointer"] = "%f %f %f" % (pointer[0], pointer[1], pointer[2])
             step_data['timer_value'] = self.timer.value
         
         return self.confirm
@@ -625,17 +649,30 @@ class Context(Logger) :
                 angle = unit_data.get('angle', None)
                 if angle is not None :
                     self.units[name].set_angle(float(angle))
-    
+                stroke = unit_data.get("stroke", None)
+                if stroke is not None :
+                    self.units[name].set_stroke_color((float(stroke.split(' ')[0]), float(stroke.split(' ')[1]), float(stroke.split(' ')[2])))
+                fill = unit_data.get("fill", None)
+                if fill is not None :
+                    self.units[name].set_fill_color((float(fill.split(' ')[0]), float(fill.split(' ')[1]), float(fill.split(' ')[2])))
+                pointer = unit_data.get("pointer", None)
+                if pointer is not None :
+                    self.units[name].set_pointer_color((float(pointer.split(' ')[0]), float(pointer.split(' ')[1]), float(pointer.split(' ')[2])))
 
-    def draw(self, screen, font) :
+
+    def draw(self, screen) :
         for unit in self.units.values() :
             if unit.shape is not None :
-                unit.shape.draw(screen, font)
+                unit.shape.draw(screen)
                 
         
 class Aggregator(Logger) :
 
-    object_status_focus = ['force', 'spin', 'time', 'position', 'angle', 'transmit', "velocity", "angular_velocity"]
+    object_status_focus = [
+            "time", "force", "spin", "transmit", 
+            "mass", "position", "angle", "velocity", "angular_velocity",
+            "stroke", "fill", "pointer",
+    ]
 
     data_attrs = {}
     
@@ -755,7 +792,6 @@ class Driver(Logger) :
         
         self.step_count += 1
             
-        
 
 class Simulator(Logger) :
     
@@ -844,7 +880,7 @@ class Simulator(Logger) :
                 if screen is not None :
                     screen.fill(THECOLORS["white"])
                     
-                    self.driver.context.draw(screen, font)
+                    self.driver.context.draw(screen)
                     pygame.display.flip()
 
                     sim_info = [ 
@@ -1131,7 +1167,7 @@ class Player(Logger) :
                 elif screen is not None :
                     screen.fill(THECOLORS["white"])
                     
-                    self.zipper.context.draw(screen, font)
+                    self.zipper.context.draw(screen)
                     pygame.display.flip()
 
                     sim_info = [ 
@@ -1154,6 +1190,200 @@ class Player(Logger) :
                     
                 clock.tick(50)
     
+
+#
+# Modules
+#
+
+class Module(Logger) :
+    def __init__(self) :
+        self.result = {"local" : {}, "post" : {}, "ram" : {}}
+    def perform(self, msg, ram) :
+        for key in self.result.keys() :
+            self.result[key] = {}
+        for (key, value) in msg.items() :
+            if self.result["post"].get(key, None) is None :
+                self.result["post"][key] = "" 
+            self.result["post"][key] += str(value)
+        for (key, value) in ram.items() :
+            if self.result["ram"].get(key, None) is None :
+                self.result["ram"][key] = ""
+            self.result["ram"][key] += str(value)
+        return self.result
+
+class ColorModule(Module) :        # change object's color 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        fills = msg.get("fills", None)
+        if fills is not None and len(fills) > 0 :
+            r = 0.0
+            g = 0.0
+            b = 0.0
+            for fill in fills:
+                r += fill[0] / len(fills)
+                g += fill[1] / len(fills)
+                b += fill[2] / len(fills)
+            self.result["post"]["fill"] = (r, g, b) 
+            
+        return self.result
+
+
+class MotionModule(Module) :        # simulate the motion interface 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        forces = msg.get("forces", None)
+        if forces is not None and len(forces) > 0 :
+            x = 0.0
+            y = 0.0
+            for force in forces:
+                x += force[0]
+                y += force[1]
+            self.result["post"]["force"] = (x, y) 
+        
+        spins = msg.get("spins", None)
+        if spins is not None and len(spins) > 0 :
+            s = 0.0
+            for spin in spins:
+                s += spin
+            self.result["post"]["spin"] = s 
+        return self.result
+
+class DriveModule(Module) :        # simulate the driver interface which drives the motion 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        self.result["local"] = {}
+        moves = msg.get("moves", None)
+
+        # union of the moves 
+
+        if moves is not None and len(moves) > 0 :
+            x = 0.0
+            y = 0.0
+            v = 0.0
+            s = 0.0
+            for move in moves:
+                if len(move) > 2 :
+                    x += move[0]
+                    y += move[1]
+                    if v > 0.0 :
+                        v = min(v, abs(move[2]))
+                    else :
+                        v = abs(move[2])
+                    if s > 0.0 :
+                        s = min(a, abs(move[3]))
+                    else :
+                        s = abs(move[3])
+       
+
+       
+        # calculate the force according to the move
+
+        if ram.get("mass", None) is None :
+            ram["mass"] = msg.get("mass", None)
+            
+        if ram["mass"] is None :
+            self.result["local"]["masses"] = ""
+        else :
+            mass = float(ram["mass"])
+            angle = msg.get("angle")
+            pos_x = msg.get("pos_x", None)
+            pos_y = msg.get("pos_y", None)
+            vel_x = msg.get("vel_x", None)
+            vel_y = msg.get("vel_y", None)
+            if None not in [pos_x, pos_y, vel_x, vel_y] :
+                vec = (x - float(pos_x), y - float(pos_y))
+                norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
+                if norm > 0.001 :
+                    vec = (vec[0] / norm, vec[1] / norm)
+                else :
+                    vec = (0.0, 0.0)
+                if angle is not None :
+                    if norm > 0.1 :
+                        if angle > math.pi :
+                            angle = angle  - 2 * math.pi
+                            
+                        spin = math.acos(vec[0])
+                        
+                        if vec[1] > 0.0 :
+                            spin = spin - angle
+                        else :
+                            spin = - spin - angle
+                        
+                        if spin > math.pi : 
+                            spin = spin - 2 * math.pi
+                        elif spin < - math.pi : 
+                            spin = spin + 2 * math.pi 
+
+                        if abs(spin) / 2.0 < s :
+                            s = abs(spin)
+
+                        if abs(spin) > 0.001 :
+                            self.result["local"]["spins"] = s * spin / abs(spin)
+                        
+                        if abs(spin) > 0.5 :
+                            vec = (0.0, 0.0)
+                    v = min(norm, v)
+                    self.result["local"]["forces"] = (mass * (vec[0] * v - vel_x), mass * (vec[1] * v - vel_y)) 
+        
+        return self.result
+        
+class CommunicateModule(Module) :   # simulate the communication interface 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        packets = msg.get('packets', None)
+        if packets is not None and len(packets) > 0 :
+            transmit = ""
+            for packet in packets:
+                transmit = transmit + packet + ";"
+            self.result['post']['transmit'] = transmit
+        return self.result
+
+
+class ProcessModule(Module) :       # simulate the process action interface
+    pass
+
+
+class SensorModule(Module) :        # simulate the sensing action interface
+    pass
+
+
+class TimeSensorModule(SensorModule) :    # query for the global time 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        self.result['post']['time'] = ""
+        return self.result
+
+class PositionSensorModule(SensorModule) :    # query for the position  
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        self.result['post']['position'] = ""
+        return self.result
+        
+class AngleSensorModule(SensorModule) :    # query for the angle (counter clock from east) 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        self.result['post']['angle'] = ""
+        return self.result
+
+class VelocitySensorModule(SensorModule) :    # query for the velocity 
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        self.result['post']["velocity"] = ""
+        return self.result
+
+class AngularVelSensorModule(SensorModule) :    # query for the angular velocity
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        self.result['post']["angular_velocity"] = ""
+        return self.result
+        
+class MassSensorModule(SensorModule) :    # query for the angular velocity
+    def perform(self, msg, ram) :
+        self.result["post"] = {}
+        if msg.get("masses", None) is not None :
+            self.result['post']["mass"] = ""
+        return self.result
+
 
 if __name__ == '__main__' :
     print("")
