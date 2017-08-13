@@ -27,7 +27,7 @@ class CarProcessModule(Module) :
 
 class CarObject(Object) :
     def __init__(self, name) :
-        mods = [CarProcessModule(), ForceModule(), SpinModule(), MoveModule(), TimeSensorModule(), MassSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), TransmitModule(), ListenModule()]
+        mods = [CarProcessModule(), ForceModule(), SetAVelModule(), MoveModule(), TimeSensorModule(), MassSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), TransmitModule(), ListenModule()]
         super(CarObject, self).__init__(name = name, mods = mods)
 
     def step(self) :

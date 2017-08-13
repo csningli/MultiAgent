@@ -304,11 +304,11 @@ class CircleShape(BasicShape, Circle) :
     def get_angular_velocity(self) :
         return self.body.angular_velocity
 
+    def set_angular_velocity(self, avel) :
+        self.body.angular_velocity = avel 
+
     def apply_force(self, force) :
         self.body.force = force
-
-    def apply_spin(self, spin) :
-        self.body.angular_velocity = spin / self.body.mass
 
 # Unit (- Context (- Simulator
 
@@ -365,8 +365,8 @@ class Unit(Logger) :
     def apply_force(self, force) :
         self.shape.apply_force(force)
 
-    def apply_spin(self, spin) :
-        self.shape.apply_spin(spin)
+    def set_angular_velocity(self, avel) :
+        self.shape.set_angular_velocity(avel)
         
     def get_stroke_color(self) :
         return self.shape.get_stroke_color()
@@ -578,12 +578,18 @@ class Context(Logger) :
         
         for (obj_name, obj_intention) in self.intention.items() :
             if obj_name in self.units.keys() :
+                vel = self.get_from_intention(obj_name = obj_name, symbol = "set_vel")
+                if vel is not None and type(vel).__name__ == "tuple" and len(vel) == 2 :
+                    self.units[obj_name].set_velocity(vel)
+                angle = self.get_from_intention(obj_name = obj_name, symbol = "set_angle")
+                if angle is not None and type(angle).__name__ == "float" :
+                    self.units[obj_name].set_angle(angle)
                 force = self.get_from_intention(obj_name = obj_name, symbol = "force")
                 if force is not None :
                     self.units[obj_name].apply_force(force)
-                spin = self.get_from_intention(obj_name = obj_name, symbol = "spin")
-                if spin is not None :
-                    self.units[obj_name].apply_spin(spin)
+                avel = self.get_from_intention(obj_name = obj_name, symbol = "set_avel")
+                if avel is not None :
+                    self.units[obj_name].set_angular_velocity(avel)
                 stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
                 if stroke is not None :
                     self.units[obj_name].set_stroke_color(stroke)
@@ -720,6 +726,7 @@ class Aggregator(Logger) :
             "time", "force", "spin", "transmit", "listen", 
             "mass", "pos", "angle", "vel", "avel",
             "fill", "stroke", "pointer",
+            "set_angle", "set_vel", "set_avel" 
     ]
 
     data_attrs = {}
@@ -1342,19 +1349,47 @@ class ForceModule(Module) :        # simulate the force interface
         return self.result
 
 
-class SpinModule(Module) :        # simulate the spin interface 
-    symbol = "spin"
+class SetAVelModule(Module) :        # simulate the spin interface 
+    symbol = "set_avel"
         
     def perform(self, msg, ram) :
-        super(SpinModule, self).perform(msg = msg, ram = ram)
+        super(SetAVelModule, self).perform(msg = msg, ram = ram)
         if self.buffs is not None :
-            s = 0.0
-            for spin in self.buffs :
-                s += spin
-            self.output(value = s) 
+            avel = 0.0
+            for a in self.buffs :
+                avel += float(a) / len(self.buffs) 
+            self.output(value = avel) 
             
         return self.result
 
+class SetVelocityModule(Module) :        
+    symbol = "set_vel"
+        
+    def perform(self, msg, ram) :
+        super(SetVelocityModule, self).perform(msg = msg, ram = ram)
+        if self.buffs is not None :
+            vx = 0.0
+            vy = 0.0
+            for vel in self.buffs :
+                vx += vel[0] 
+                vy += vel[1] 
+            self.output(value = (vx, vy)) 
+            
+        return self.result
+
+
+class SetAngleModule(Module) :        
+    symbol = "set_angle"
+        
+    def perform(self, msg, ram) :
+        super(SetAngleModule, self).perform(msg = msg, ram = ram)
+        if self.buffs is not None :
+            a = 0.0
+            for angle in self.buffs :
+                a += angle / len(self.buffs)
+            self.output(value = float(a)) 
+            
+        return self.result
 
 class MoveModule(Module) :        # simulate the driver interface which drives the motion 
     symbol = "move"
@@ -1379,7 +1414,6 @@ class MoveModule(Module) :        # simulate the driver interface which drives t
                         s = min(a, abs(move[3]))
                     else :
                         s = abs(move[3])
-       
 
             mass = self.get_from_ram(ram = ram, symbol = "mass")
             if mass is None :
@@ -1400,37 +1434,36 @@ class MoveModule(Module) :        # simulate the driver interface which drives t
                         vec = (vec[0] / norm, vec[1] / norm)
                     else :
                         vec = (0.0, 0.0)
-                    if angle is not None :
-                        if norm > 0.1 :
-                            if angle > math.pi :
-                                angle = angle  - 2 * math.pi
-                                
-                            spin = math.acos(vec[0])
+                    if norm > 0.1 :
+                        if angle > math.pi :
+                            angle = angle  - 2 * math.pi
                             
-                            if vec[1] > 0.0 :
-                                spin = spin - angle
-                            else :
-                                spin = - spin - angle
-                            
-                            if spin > math.pi : 
-                                spin = spin - 2 * math.pi
-                            elif spin < - math.pi : 
-                                spin = spin + 2 * math.pi 
+                        spin = math.acos(vec[0])
+                        
+                        if vec[1] > 0.0 :
+                            spin = spin - angle
+                        else :
+                            spin = - spin - angle
+                        
+                        if spin > math.pi : 
+                            spin = spin - 2 * math.pi
+                        elif spin < - math.pi : 
+                            spin = spin + 2 * math.pi 
 
-                            if abs(spin) / 2.0 < s :
-                                s = abs(spin)
+                        if abs(spin) / 2.0 < s :
+                            s = abs(spin)
 
-                            if abs(spin) > 0.001 :
-                                self.inform_module(symbol = "spin", value = s * spin / abs(spin))
-                            
-                            if abs(spin) > 0.5 :
-                                vec = (0.0, 0.0)
-                        v = min(norm, v)
-                        self.inform_module(symbol = "force", value = (mass * (vec[0] * v - vel[0]), mass * (vec[1] * v - vel[1])))
+                        if abs(spin) > 0.001 :
+                            self.inform_module(symbol = "set_avel", value = s * spin / (abs(spin) * mass))
+                        
+                        if abs(spin) > 0.5 :
+                            vec = (0.0, 0.0)
+                    v = min(norm, v)
+                    self.inform_module(symbol = "force", value = (mass * (vec[0] * v - vel[0]), mass * (vec[1] * v - vel[1])))
         else :
             vel = self.get_from_msg(msg = msg, symbol = "vel")
             if vel is not None and math.sqrt(vel[0] * vel[0] + vel[1] * vel[1]) > 0.001 :
-                self.inform_module(symbol = "force", value = (-vel[0] * mass, -vel[1] * mass))
+                self.inform_module(symbol = "force", value = (-vel[0], -vel[1]))
                 
         self.activate_sensors(symbols = sensor_symbols)
             

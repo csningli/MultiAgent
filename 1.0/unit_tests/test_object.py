@@ -25,7 +25,7 @@ def test_object() :
     obj.status["pre"] = pre
     obj.status["local"] = local 
     obj.status["mem"] = mem
-    obj.step(obj_data = None)
+    obj.step()
     print("Object status: %s" % obj.status)
 
 
