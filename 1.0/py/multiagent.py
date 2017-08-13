@@ -128,7 +128,7 @@ class Object(Logger) :
     def __str__(self) :
         return '<multiagent.%s name=%s>' % (self.__class__.__name__, self.name)
         
-    def step(self, obj_data = None) :
+    def step(self) :
         self.info("%s steps." % self)
         
         #self.info("%s '%s' pre-status: %s" % (obj.__class__.__name__, obj.name, obj.status['pre']))
@@ -140,23 +140,38 @@ class Object(Logger) :
         for mod in self.mods : 
             result = mod.perform(msg = self.status['pre'], ram = self.status['mem'])
             for domain in ["local"] : 
-                domain_result = result.get(domain, None) 
-                if domain_result is not None :
-                    for key in domain_result.keys() :
-                        if self.status[domain].get(key, None) is None :
-                            self.status[domain][key] = []
-                        self.status[domain][key].append(domain_result[key])
+                domain_buffs = result.get(domain, None) 
+                if domain_buffs is not None :
+                    for symbol_buff in domain_buffs.keys() :
+                        if self.status[domain].get(symbol_buff, None) is None :
+                            self.status[domain][symbol_buff] = []
+                        self.status[domain][symbol_buff].append(domain_buffs[symbol_buff])
             for domain in ["post"] : 
-                domain_result = result.get(domain, None) 
-                if domain_result is not None :
-                    for key in domain_result.keys() :
-                        self.status[domain][key] = domain_result[key]
-        #self.info("%s '%s' post-status: %s" % (obj.__class__.__name__, obj.name, obj.status['post']))
+                domain_request = result.get(domain, None) 
+                if domain_request is not None :
+                    for symbol in domain_request.keys() :
+                        self.status[domain][symbol] = domain_request[symbol]
 
+    def snap(self, obj_data = None) :
+        if obj_data is not None :
+            for domain in ["pre", "post", "local", "mem"] : 
+                obj_data[domain] = {}
+                for (key, value) in self.status[domain].items() :
+                    obj_data[domain][key] = value 
+
+        
     def mimic(self, obj_data) :
-        pass
+        if obj_data is not None :
+            for domain in ["pre", "post", "local", "mem"] : 
+                if obj_data.get(domain, None) is not None :
+                    for (key, value) in obj_data[domain].items() :
+                        self.status[domain][key] = value
 
-
+    def put_to_mem(self, symbol, value) :
+        if type(symbol).__name__ == "str" : 
+            self.status["mem"][symbol + "_value"] = value 
+        return self.status["mem"] 
+        
 class BasicShape(Logger) :
     stroke_color = THECOLORS["blue"]
     fill_color = THECOLORS["blue"]
@@ -169,7 +184,7 @@ class BasicShape(Logger) :
         return self.stroke_color
 
     def set_fill_color(self, color) :
-        fill_color = color 
+        self.fill_color = color 
 
     def get_fill_color(self) :
         return self.fill_color
@@ -282,6 +297,9 @@ class CircleShape(BasicShape, Circle) :
     def get_velocity(self) :
         velocity = self.body.velocity
         return (velocity.x, velocity.y) 
+        
+    def set_velocity(self, vel) :
+        self.body.velocity = vel
 
     def get_angular_velocity(self) :
         return self.body.angular_velocity
@@ -337,6 +355,9 @@ class Unit(Logger) :
 
     def get_velocity(self) :
         return self.shape.get_velocity() 
+        
+    def set_velocity(self, vel) :
+        return self.shape.set_velocity(vel) 
 
     def get_angular_velocity(self) :
         return self.shape.get_angular_velocity()
@@ -468,6 +489,18 @@ class Context(Logger) :
             'tick' : None, 
     } 
 
+    intention_attrs = {
+        "get" : None,
+        "items" : {
+            "__iter__" : None,
+        },
+        "__getitem__" : {
+            "items" : {
+                "__iter__" : None,
+            },
+        },
+    }
+
     step_data_attrs = {
             'get' : None, 
             'keys' : None, 
@@ -536,26 +569,28 @@ class Context(Logger) :
                     self.error("Invalid 'object'.")
 
 
-    def judge(self, intention, step_data = None) :
-        self.intention = intention
-        
+    def judge(self, intention) :
+        self.intention = {}
+        if check_attrs(intention, self.intention_attrs) :
+            self.intention = intention
+
         # collect and apply the physics information
         
         for (obj_name, obj_intention) in self.intention.items() :
             if obj_name in self.units.keys() :
-                force = obj_intention.get('force', None)
+                force = self.get_from_intention(obj_name = obj_name, symbol = "force")
                 if force is not None :
                     self.units[obj_name].apply_force(force)
-                spin = obj_intention.get('spin', None)
+                spin = self.get_from_intention(obj_name = obj_name, symbol = "spin")
                 if spin is not None :
                     self.units[obj_name].apply_spin(spin)
-                stroke = obj_intention.get("stroke", None)
+                stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
                 if stroke is not None :
                     self.units[obj_name].set_stroke_color(stroke)
-                fill = obj_intention.get("fill", None)
+                fill = self.get_from_intention(obj_name = obj_name, symbol = "fill")
                 if fill is not None :
                     self.units[obj_name].set_fill_color(fill)
-                pointer = obj_intention.get("pointer", None)
+                pointer = self.get_from_intention(obj_name = obj_name, symbol = "pointer")
                 if pointer is not None :
                     self.units[obj_name].set_pointer_color(pointer)
 
@@ -567,97 +602,110 @@ class Context(Logger) :
         # response to the sensors 
 
         self.confirm = {}
+        transmits = [] 
+        listeners = []
         for (obj_name, obj_intention) in self.intention.items() :
+            if self.confirm.get(obj_name, None) is None :
+                self.confirm[obj_name] = {}
+                
+            transmit = self.get_from_intention(obj_name = obj_name, symbol = "transmit")
+            if transmit is not None :
+                transmits.append(transmit) 
+
+            listen = self.get_from_intention(obj_name = obj_name, symbol = "listen")
+            if listen is not None :
+                listeners.append(obj_name) 
+                
+            time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
+            mass_query = self.get_from_intention(obj_name = obj_name, symbol = "mass")
+            pos_query = self.get_from_intention(obj_name = obj_name, symbol = "pos")
+            angle_query = self.get_from_intention(obj_name = obj_name, symbol = "angle")
+            vel_query = self.get_from_intention(obj_name = obj_name, symbol = "vel")
+            avel_query = self.get_from_intention(obj_name = obj_name, symbol = "avel")
+
+            if time_query is not None :
+                self.feed_confirm(obj_name = obj_name, results = {"time" : self.timer.value})
+            results = {}
+            if mass_query is not None : 
+                results["mass"] = self.units[obj_name].get_mass()
+            if pos_query is not None : 
+                pos = self.units[obj_name].get_position()
+                results["pos"] = (pos[0], pos[1]) 
+            if angle_query is not None : 
+                results["angle"] = self.units[obj_name].get_angle() 
+            if vel_query is not None : 
+                vel = self.units[obj_name].get_velocity()
+                results["vel"] = (vel[0], vel[1]) 
+            if avel_query is not None : 
+                results["avel"] = self.units[obj_name].get_angular_velocity() 
+            self.feed_confirm(obj_name = obj_name, results = results, check_unit = True)
+        
+        for obj_name in listeners :
+            self.feed_confirm(obj_name = obj_name, results = {"listen" : transmits})
+            
+        return self.confirm
+
+    def get_from_intention(self, obj_name, symbol) :
+        value = None
+        if self.intention is not None and self.intention.get(obj_name, None) is not None :
+            value = self.intention[obj_name].get(symbol, None)
+        return value
+
+    def feed_confirm(self, obj_name, results, check_unit = False) :
+        if type(obj_name).__name__ == "str" and (not check_unit or self.units.get(obj_name, None) is not None) and type(results).__name__ == "dict" :
+            for (symbol, value) in results.items() :
                 if self.confirm.get(obj_name, None) is None :
                     self.confirm[obj_name] = {}
-                    
-                time_query = obj_intention.get('time', None)
-                mass_query = obj_intention.get("mass", None)
-                pos_query = obj_intention.get('position', None)
-                angle_query = obj_intention.get('angle', None)
-                velocity_query = obj_intention.get('velocity', None)
-                angular_velocity_query = obj_intention.get('angular_velocity', None)
-
-                if time_query is not None :
-                    self.confirm[obj_name]['timer_value'] = self.timer.value
-
-                if self.units.get(obj_name, None) is not None : 
-                    if mass_query is not None : 
-                        self.confirm[obj_name]["mass"] = self.units[obj_name].get_mass()
-                    if pos_query is not None : 
-                        pos = self.units[obj_name].get_position()
-                        self.confirm[obj_name]['pos_x'] = pos[0]
-                        self.confirm[obj_name]['pos_y'] = pos[1]
-                    if angle_query is not None : 
-                        self.confirm[obj_name]['angle'] = self.units[obj_name].get_angle() 
-                    if velocity_query is not None : 
-                        vel = self.units[obj_name].get_velocity()
-                        self.confirm[obj_name]["vel_x"] = vel[0]
-                        self.confirm[obj_name]["vel_y"] = vel[1]
-                    if angular_velocity_query is not None : 
-                        self.confirm[obj_name]['angular_vel'] = self.units[obj_name].get_angular_velocity() 
-
-        self.post_judge()
-
+                self.confirm[obj_name][symbol + "_result"] = value
+                
+    def snap(self, step_data) :
         if step_data is not None and check_attrs(step_data, self.step_data_attrs) :
             for (name, unit) in self.units.items() :
                 if step_data.get(name, None) is None :
                     step_data[name] = {}
                 pos = unit.get_position()
+                step_data[name]["pos"] = "%f %f" % (pos[0], pos[1])
                 angle = unit.get_angle()
-                step_data[name]['pos_x'] = pos[0]
-                step_data[name]['pos_y'] = pos[1]
-                step_data[name]['angle'] = angle
+                step_data[name]['angle'] = "%f" % angle
                 stroke = unit.get_stroke_color()  
                 step_data[name]["stroke"] = "%f %f %f" % (stroke[0], stroke[1], stroke[2])
                 fill = unit.get_fill_color()  
                 step_data[name]["fill"] = "%f %f %f" % (fill[0], fill[1], fill[2])
                 pointer = unit.get_pointer_color()  
                 step_data[name]["pointer"] = "%f %f %f" % (pointer[0], pointer[1], pointer[2])
-            step_data['timer_value'] = self.timer.value
-        
-        return self.confirm
 
-
-    def post_judge(self) :
-        transmits = {}
-        for (obj_name, obj_intention) in self.intention.items() :
-            if obj_name in self.units.keys() :
-                transmit = obj_intention.get('transmit', None)
-                if transmit is not None :
-                    transmits[obj_name] = transmit 
-        for (unit_name, unit) in self.units.items() :
-            if self.confirm.get(unit_name, None) is None :
-                self.confirm[unit_name] = {}
-            self.confirm[unit_name]['receive'] = transmits
-
+            step_data["_global_"] = {}
+            step_data["_global_"]["timer"] = self.timer.value
 
     def mimic(self, step_data) :
         if step_data is not None and check_attrs(step_data, self.step_data_attrs):
-            timer_value = step_data.get('timer_value', None)
-            if timer_value is not None :
-                self.timer.value = float(timer_value)
             for (name, unit_data) in step_data.items() :
-                if name == "timer_value" :
-                    continue
-                if name not in self.units.keys() :
-                    self.units[name] = Unit(name = name)
-                pos_x = unit_data.get('pos_x', None)
-                pos_y = unit_data.get('pos_y', None)
-                if pos_x is not None and pos_y is not None :
-                    self.units[name].set_position((float(pos_x), float(pos_y)))
-                angle = unit_data.get('angle', None)
-                if angle is not None :
-                    self.units[name].set_angle(float(angle))
-                stroke = unit_data.get("stroke", None)
-                if stroke is not None :
-                    self.units[name].set_stroke_color((float(stroke.split(' ')[0]), float(stroke.split(' ')[1]), float(stroke.split(' ')[2])))
-                fill = unit_data.get("fill", None)
-                if fill is not None :
-                    self.units[name].set_fill_color((float(fill.split(' ')[0]), float(fill.split(' ')[1]), float(fill.split(' ')[2])))
-                pointer = unit_data.get("pointer", None)
-                if pointer is not None :
-                    self.units[name].set_pointer_color((float(pointer.split(' ')[0]), float(pointer.split(' ')[1]), float(pointer.split(' ')[2])))
+                if name == "_global_" :
+                    timer_value = unit_data.get('timer', None)
+                    if timer_value is not None :
+                        self.timer.value = float(timer_value)
+                else :
+                    if name not in self.units.keys() :
+                        self.units[name] = Unit(name = name)
+
+                    pos= unit_data.get("pos", None)
+                    if pos is not None :
+                        self.units[name].set_position((float(pos.split(' ')[0]), float(pos.split(' ')[1])))
+
+                    angle = unit_data.get('angle', None)
+                    if angle is not None :
+                        self.units[name].set_angle(float(angle))
+
+                    stroke = unit_data.get("stroke", None)
+                    if stroke is not None :
+                        self.units[name].set_stroke_color((float(stroke.split(' ')[0]), float(stroke.split(' ')[1]), float(stroke.split(' ')[2])))
+                        
+                    fill = unit_data.get("fill", None)
+                    if fill is not None :
+                        self.units[name].set_fill_color((float(fill.split(' ')[0]), float(fill.split(' ')[1]), float(fill.split(' ')[2])))
+                    pointer = unit_data.get("pointer", None)
+                    if pointer is not None :
+                        self.units[name].set_pointer_color((float(pointer.split(' ')[0]), float(pointer.split(' ')[1]), float(pointer.split(' ')[2])))
 
 
     def draw(self, screen) :
@@ -669,9 +717,9 @@ class Context(Logger) :
 class Aggregator(Logger) :
 
     object_status_focus = [
-            "time", "force", "spin", "transmit", 
-            "mass", "position", "angle", "velocity", "angular_velocity",
-            "stroke", "fill", "pointer",
+            "time", "force", "spin", "transmit", "listen", 
+            "mass", "pos", "angle", "vel", "avel",
+            "fill", "stroke", "pointer",
     ]
 
     data_attrs = {}
@@ -773,15 +821,20 @@ class Driver(Logger) :
                 if step_data is not None :
                     obj_data = {}
                 obj.status['post'] = {}
-                obj.step(obj_data = obj_data)
+                obj.step()
+                obj.snap(obj_data = obj_data)
                 if obj_data is not None and len(obj_data) > 0 :
                     if step_data.get(obj.name, None) is None :
                         step_data[obj.name] = {}
-                    for (key, value) in obj_data :
-                        step_data[obj.name][key] = value  
+                    if step_data[obj.name].get("status", None) is None :
+                        step_data[obj.name]["status"] = {}
+                    for (key, value) in obj_data.items() :
+                        step_data[obj.name]["status"][key] = value  
                 obj.status['pre'] = {}
             self.intention = self.aggr.post(objects = self.objects)
-            self.confirm = self.context.judge(intention = self.intention, step_data = step_data)
+            self.confirm = self.context.judge(intention = self.intention)
+            if step_data is not None :
+                self.context.snap(step_data = step_data)
             self.intention = {}
         else :
             self.error("None 'context' or none 'aggr'. Step omitted.")
@@ -824,8 +877,8 @@ class Simulator(Logger) :
         pygame.init()
 
         screen = None
-        width = 600
-        height = 600
+        width = 800
+        height = 800
         if graphics :
              screen = pygame.display.set_mode((width, height))
         
@@ -1066,8 +1119,8 @@ class Zipper(Logger) :
         if step_data is not None :
             self.context.mimic(step_data = step_data)
             for obj in self.objects :
-                obj.mimic(obj_data = step_data.get(obj.name, None))
-        
+                if step_data.get(obj.name, None) is not None :
+                    obj.mimic(obj_data = step_data[obj.name].get("status", None))
          
 
 class Player(Logger) :
@@ -1099,8 +1152,8 @@ class Player(Logger) :
         pygame.init()
 
         screen = None
-        width = 600
-        height = 600
+        width = 800
+        height = 800
         if graphics :
              screen = pygame.display.set_mode((width, height))
         
@@ -1196,72 +1249,125 @@ class Player(Logger) :
 #
 
 class Module(Logger) :
+
+    msg_attrs = {
+        "get" : None,
+    }
+    
+    ram_attrs = {
+        "get" : None,
+    }
+    
+    symbol = None
+    
     def __init__(self) :
         self.result = {"local" : {}, "post" : {}, "ram" : {}}
-    def perform(self, msg, ram) :
-        for key in self.result.keys() :
-            self.result[key] = {}
-        for (key, value) in msg.items() :
-            if self.result["post"].get(key, None) is None :
-                self.result["post"][key] = "" 
-            self.result["post"][key] += str(value)
-        for (key, value) in ram.items() :
-            if self.result["ram"].get(key, None) is None :
-                self.result["ram"][key] = ""
-            self.result["ram"][key] += str(value)
-        return self.result
-
-class ColorModule(Module) :        # change object's color 
+        self.buffs = None
+        
     def perform(self, msg, ram) :
         self.result["post"] = {}
-        fills = msg.get("fills", None)
-        if fills is not None and len(fills) > 0 :
+        self.result["local"] = {}
+        self.update_information(msg = msg)
+        return self.result
+
+    def output(self, value) :
+        self.result["post"][self.symbol] = value
+        
+    def inform_module(self, symbol, value) :
+        if type(symbol).__name__ == "str" and len(symbol) > 0 :
+            self.result["local"][symbol + "_buff"] = value
+            
+    def activate_sensors(self, symbols) :
+        if type(symbols).__name__ == "list" and len(symbols) > 0 :
+            for symbol in symbols :
+                self.inform_module(symbol, "")
+
+    def update_information(self, msg) :
+        self.buffs = None
+        if self.symbol is not None and check_attrs(msg, self.msg_attrs) :
+            self.buffs = msg.get(self.symbol + "_buff", None)
+            if self.buffs is not None :
+                if type(self.buffs).__name__ != "list" or len(self.buffs) < 1 :
+                    self.buffs = None
+
+    def get_from_msg(self, msg, symbol) :
+        value = None
+        if check_attrs(msg, self.msg_attrs) and type(symbol).__name__ == "str" : 
+            value = msg.get(symbol + "_result", None)
+        return value
+
+    def get_from_ram(self, ram, symbol) :
+        value = None
+        if check_attrs(ram, self.ram_attrs) and type(symbol).__name__ == "str" : 
+            value = ram.get(symbol + "_value", None)
+        return value
+
+    def put_to_ram(self, ram, symbol, value) :
+        if check_attrs(ram, self.ram_attrs) and type(symbol).__name__ == "str" : 
+            ram[symbol + "_value"] = value 
+        return ram 
+
+
+class ColorModule(Module) :        # change object's color 
+    symbol = "fill"
+        
+    def perform(self, msg, ram) :
+        super(ColorModule, self).perform(msg = msg, ram = ram)
+        if self.buffs is not None :
             r = 0.0
             g = 0.0
             b = 0.0
-            for fill in fills:
+            for fill in self.buffs:
                 r += fill[0] / len(fills)
                 g += fill[1] / len(fills)
                 b += fill[2] / len(fills)
-            self.result["post"]["fill"] = (r, g, b) 
+            self.output(value = (r, g, b))
             
         return self.result
 
 
-class MotionModule(Module) :        # simulate the motion interface 
+class ForceModule(Module) :        # simulate the force interface 
+    symbol = "force"
+        
     def perform(self, msg, ram) :
-        self.result["post"] = {}
-        forces = msg.get("forces", None)
-        if forces is not None and len(forces) > 0 :
+        super(ForceModule, self).perform(msg = msg, ram = ram)
+        if self.buffs is not None :
             x = 0.0
             y = 0.0
-            for force in forces:
+            for force in self.buffs :
                 x += force[0]
                 y += force[1]
-            self.result["post"]["force"] = (x, y) 
-        
-        spins = msg.get("spins", None)
-        if spins is not None and len(spins) > 0 :
-            s = 0.0
-            for spin in spins:
-                s += spin
-            self.result["post"]["spin"] = s 
+            self.output(value = (x, y))
+            
         return self.result
 
-class DriveModule(Module) :        # simulate the driver interface which drives the motion 
+
+class SpinModule(Module) :        # simulate the spin interface 
+    symbol = "spin"
+        
     def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result["local"] = {}
-        moves = msg.get("moves", None)
+        super(SpinModule, self).perform(msg = msg, ram = ram)
+        if self.buffs is not None :
+            s = 0.0
+            for spin in self.buffs :
+                s += spin
+            self.output(value = s) 
+            
+        return self.result
 
-        # union of the moves 
 
-        if moves is not None and len(moves) > 0 :
+class MoveModule(Module) :        # simulate the driver interface which drives the motion 
+    symbol = "move"
+        
+    def perform(self, msg, ram) :
+        super(MoveModule, self).perform(msg = msg, ram = ram)
+        sensor_symbols = ["pos", "vel", "angle"]
+        if self.buffs is not None :
             x = 0.0
             y = 0.0
             v = 0.0
             s = 0.0
-            for move in moves:
+            for move in self.buffs :
                 if len(move) > 2 :
                     x += move[0]
                     y += move[1]
@@ -1275,114 +1381,113 @@ class DriveModule(Module) :        # simulate the driver interface which drives 
                         s = abs(move[3])
        
 
-       
-        # calculate the force according to the move
-
-        if ram.get("mass", None) is None :
-            ram["mass"] = msg.get("mass", None)
-            
-        if ram["mass"] is None :
-            self.result["local"]["masses"] = ""
-        else :
-            mass = float(ram["mass"])
-            angle = msg.get("angle")
-            pos_x = msg.get("pos_x", None)
-            pos_y = msg.get("pos_y", None)
-            vel_x = msg.get("vel_x", None)
-            vel_y = msg.get("vel_y", None)
-            if None not in [pos_x, pos_y, vel_x, vel_y] :
-                vec = (x - float(pos_x), y - float(pos_y))
-                norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
-                if norm > 0.001 :
-                    vec = (vec[0] / norm, vec[1] / norm)
+            mass = self.get_from_ram(ram = ram, symbol = "mass")
+            if mass is None :
+                mass_result = self.get_from_msg(msg = msg, symbol = "mass")
+                if mass_result is None or type(mass_result).__name__ != "float" :
+                    sensor_symbols.append("mass")
                 else :
-                    vec = (0.0, 0.0)
-                if angle is not None :
-                    if norm > 0.1 :
-                        if angle > math.pi :
-                            angle = angle  - 2 * math.pi
+                    self.put_to_ram(ram = ram, symbol = "mass", value = mass_result)
+            else :
+                # calculate the force according to the move
+                angle = self.get_from_msg(msg = msg, symbol = "angle")
+                pos = self.get_from_msg(msg = msg, symbol = "pos")
+                vel = self.get_from_msg(msg = msg, symbol = "vel")
+                if None not in [pos, vel, angle] :
+                    vec = (x - float(pos[0]), y - float(pos[1]))
+                    norm = math.sqrt(vec[0] * vec[0] + vec[1] * vec[1])
+                    if norm > 0.001 :
+                        vec = (vec[0] / norm, vec[1] / norm)
+                    else :
+                        vec = (0.0, 0.0)
+                    if angle is not None :
+                        if norm > 0.1 :
+                            if angle > math.pi :
+                                angle = angle  - 2 * math.pi
+                                
+                            spin = math.acos(vec[0])
                             
-                        spin = math.acos(vec[0])
-                        
-                        if vec[1] > 0.0 :
-                            spin = spin - angle
-                        else :
-                            spin = - spin - angle
-                        
-                        if spin > math.pi : 
-                            spin = spin - 2 * math.pi
-                        elif spin < - math.pi : 
-                            spin = spin + 2 * math.pi 
+                            if vec[1] > 0.0 :
+                                spin = spin - angle
+                            else :
+                                spin = - spin - angle
+                            
+                            if spin > math.pi : 
+                                spin = spin - 2 * math.pi
+                            elif spin < - math.pi : 
+                                spin = spin + 2 * math.pi 
 
-                        if abs(spin) / 2.0 < s :
-                            s = abs(spin)
+                            if abs(spin) / 2.0 < s :
+                                s = abs(spin)
 
-                        if abs(spin) > 0.001 :
-                            self.result["local"]["spins"] = s * spin / abs(spin)
-                        
-                        if abs(spin) > 0.5 :
-                            vec = (0.0, 0.0)
-                    v = min(norm, v)
-                    self.result["local"]["forces"] = (mass * (vec[0] * v - vel_x), mass * (vec[1] * v - vel_y)) 
-        
+                            if abs(spin) > 0.001 :
+                                self.inform_module(symbol = "spin", value = s * spin / abs(spin))
+                            
+                            if abs(spin) > 0.5 :
+                                vec = (0.0, 0.0)
+                        v = min(norm, v)
+                        self.inform_module(symbol = "force", value = (mass * (vec[0] * v - vel[0]), mass * (vec[1] * v - vel[1])))
+        else :
+            vel = self.get_from_msg(msg = msg, symbol = "vel")
+            if vel is not None and math.sqrt(vel[0] * vel[0] + vel[1] * vel[1]) > 0.001 :
+                self.inform_module(symbol = "force", value = (-vel[0] * mass, -vel[1] * mass))
+                
+        self.activate_sensors(symbols = sensor_symbols)
+            
         return self.result
         
-class CommunicateModule(Module) :   # simulate the communication interface 
+
+class TransmitModule(Module) :   # simulate the transmit interface 
+    symbol = "transmit"
+        
     def perform(self, msg, ram) :
-        self.result["post"] = {}
-        packets = msg.get('packets', None)
-        if packets is not None and len(packets) > 0 :
-            transmit = ""
-            for packet in packets:
-                transmit = transmit + packet + ";"
-            self.result['post']['transmit'] = transmit
+        super(TransmitModule, self).perform(msg = msg, ram = ram)
+
+        if self.buffs is not None :
+            transmit_union = ""
+            for transmit in self.buffs :
+                transmit_union = transmit_union + transmit + ";"
+            self.output(value = transmit_union)
+            
         return self.result
 
 
 class ProcessModule(Module) :       # simulate the process action interface
     pass
-
+    
 
 class SensorModule(Module) :        # simulate the sensing action interface
-    pass
+    def perform(self, msg, ram) :
+        super(SensorModule, self).perform(msg = msg, ram = ram)
+        if self.buffs is not None :
+            self.output(value = "")
+        return self.result
 
+class ListenModule(SensorModule) :   # simulate the listen interface 
+    symbol = "listen"
 
 class TimeSensorModule(SensorModule) :    # query for the global time 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']['time'] = ""
-        return self.result
+    symbol = "time"
+
 
 class PositionSensorModule(SensorModule) :    # query for the position  
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']['position'] = ""
-        return self.result
-        
+    symbol = "pos"
+
+
 class AngleSensorModule(SensorModule) :    # query for the angle (counter clock from east) 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']['angle'] = ""
-        return self.result
+    symbol = "angle"
+
 
 class VelocitySensorModule(SensorModule) :    # query for the velocity 
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']["velocity"] = ""
-        return self.result
+    symbol = "vel"
+
 
 class AngularVelSensorModule(SensorModule) :    # query for the angular velocity
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        self.result['post']["angular_velocity"] = ""
-        return self.result
+    symbol = "avel"
+        
         
 class MassSensorModule(SensorModule) :    # query for the angular velocity
-    def perform(self, msg, ram) :
-        self.result["post"] = {}
-        if msg.get("masses", None) is not None :
-            self.result['post']["mass"] = ""
-        return self.result
+    symbol = "mass"
 
 
 if __name__ == '__main__' :
@@ -1391,5 +1496,5 @@ if __name__ == '__main__' :
     print("")
     print("(c) 2017-2018, NiL, csningli@gmail.com.")
     print("")
-    print("Interactive Mode.")
+    #print("Interactive Mode.")
     print("")

@@ -2,7 +2,7 @@
 
 import sys, os, time
 
-sys.path.append("../py")
+sys.path.append("../../py")
 
 from multiagent import * 
 from car_simulation import car_objects, car_context

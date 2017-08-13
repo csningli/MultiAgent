@@ -1,7 +1,7 @@
 
 import sys, os, time, math
 
-sys.path.append("../py")
+sys.path.append("../../py")
 
 from multiagent import * 
 
@@ -13,24 +13,25 @@ class CarProcessModule(Module) :
         (-100.0, -100.0), 
     ] 
     def perform(self, msg, ram) :
-        self.result["local"] = {}
-        self.result["post"] = {}
+        super(CarProcessModule, self).perform(msg = msg, ram = ram)
         vel = 30.0
         avel = 1.0
         index = 0
-        timer_value = msg.get("timer_value", None)
-        if None not in [timer_value, ] :
-            index = int(math.floor(timer_value / 10.0)) % 4 
-            self.result["local"]["moves"] = (self.targets[index][0], self.targets[index][1], vel, avel)
+        time_value = self.get_from_msg(msg = msg, symbol = "time")
+        if None not in [time_value, ] :
+            index = int(math.floor(time_value / 10.0)) % 4 
+            self.inform_module(symbol = "move", value = (self.targets[index][0], self.targets[index][1], vel, avel))
+
+        self.activate_sensors(symbols = ["time", "listen"])
         return self.result
 
 class CarObject(Object) :
     def __init__(self, name) :
-        mods = [CarProcessModule(), MotionModule(), DriveModule(), TimeSensorModule(), MassSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), CommunicateModule()]
+        mods = [CarProcessModule(), ForceModule(), SpinModule(), MoveModule(), TimeSensorModule(), MassSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), TransmitModule(), ListenModule()]
         super(CarObject, self).__init__(name = name, mods = mods)
 
-    def step(self, obj_data = None) :
-        super(CarObject, self).step(obj_data = obj_data)
+    def step(self) :
+        super(CarObject, self).step()
         self.info("Object %s's status: %s" % (self.name, self.status))
 
 class CarContext(Context) :

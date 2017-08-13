@@ -10,11 +10,11 @@ from multiagent import *
 def test_context() :
     '''
     >>> test_context()
-    intention: {'1': {'transmit': 'message'}, '0': {'position': '', 'angle': '', 'time': ''}}
-    confirm: {'1': {'receive': {'1': 'message'}}, '0': {'receive': {'1': 'message'}, 'pos_x': 0.0, 'pos_y': 0.0, 'angle': 0.0, 'timer': {'value': 0.02}}}
+    intention: {'1': {'transmit': 'message', 'listen': ''}, '0': {'listen': '', 'angle': '', 'avel': '', 'time': ''}}
+    confirm: {'1': {'listen_result': ['message']}, '0': {'listen_result': ['message'], 'time_result': 0.02, 'angle_result': 0.0, 'avel_result': 0.0}}
     '''
     context = Context(delta = 1.0 / 50.0, units = {Unit(name = "0"), Unit(name = "1")})
-    intention = {"0" : {"time" : "", "position" : "", "angle" : ""}, "1" : {"transmit" : "message"}}
+    intention = {"0" : {"time" : "", "avel" : "", "angle" : "", "listen" : ""}, "1" : {"transmit" : "message", "listen" : ""}}
     print("intention: %s" % intention)
     confirm = context.judge(intention = intention)
     print("confirm: %s" % confirm)
