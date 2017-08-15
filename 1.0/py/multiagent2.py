@@ -14,17 +14,24 @@ def append_to_sys_path(path = None) :
         path = '/'.join(unit_tests_path.split('/')[:-1]) + '/py'
     sys.path.append(path)
 
-def test_func(func) :
-    def func_wrapper(*argv) :
-        print('| Run test: %s' % func.__name__)
-        start = time.time()
-        func(*argv)
-        for label in ['INFO', 'ERROR'] :
-            Logger().print_logs(label = label)
-        end = time.time()
-        print('| Done. Time cost: %s (s)' % (end - start))
-        print('-' * 60)
-    return func_wrapper
+def test_func(data = None, show = []) :
+    def real_test_func(func) : 
+        def func_wrapper(*argv) :
+            print('| Run test: %s' % func.__name__)
+            start = time.time()
+            func(*argv)
+            end = time.time()
+            for label in show :
+                if label in ['INFO', 'ERROR'] :
+                    print("Wait seconds for preparing the '%s' logs." % label)
+                    Logger().print_logs(label = label)
+            if data is not None : 
+                print("Wait seconds for storing the data into files.")
+                data.to_file()
+            print('| Done. Time cost: %s (s)' % (end - start))
+            print('-' * 60)
+        return func_wrapper
+    return real_test_func
 
 def check_attrs(obj, attrs) :
     is_valid = True
@@ -176,7 +183,10 @@ class BasicShape(Logger) :
     stroke_color = THECOLORS["blue"]
     fill_color = THECOLORS["blue"]
     pointer_color = THECOLORS["red"]
-    
+   
+    def get_radius(self) :
+        return 0.0 
+        
     def set_stroke_color(self, color) :
         self.stroke_color = color 
 
@@ -199,7 +209,7 @@ class BasicShape(Logger) :
         pass
 
     def get_range(self) :
-        return (1.0, 1.0)
+        return (0.0, 0.0)
 
     def get_position(self) :
         return (0.0, 0.0)
@@ -227,6 +237,12 @@ class BasicShape(Logger) :
 
     def apply_spin(self, spin) :
         pass
+
+    def get_range(self) :
+        return (self.radius, self.radius) 
+
+    def get_radius(self) :
+        return self.radius
         
 class SegmentShape(BasicShape, Segment) : 
     def __init__(self, a, b) :
@@ -273,7 +289,7 @@ class CircleShape(BasicShape, Circle) :
         return self.body.mass
         
     def get_position(self) :
-        return self.body.position 
+        return tuple(self.body.position)
         
     def set_position(self, position) :
         result = False
@@ -286,17 +302,10 @@ class CircleShape(BasicShape, Circle) :
         return self.body.angle
 
     def set_angle(self, angle) :
-        result = False
         self.body.angle = angle
-        result = True
-        return result 
-        
-    def get_range(self) :
-        return (self.radius, self.radius) 
         
     def get_velocity(self) :
-        velocity = self.body.velocity
-        return (velocity.x, velocity.y) 
+        return tuple(self.body.velocity) 
         
     def set_velocity(self, vel) :
         self.body.velocity = vel
@@ -310,6 +319,12 @@ class CircleShape(BasicShape, Circle) :
     def apply_force(self, force) :
         self.body.force = force
 
+    def get_range(self) :
+        return (self.radius, self.radius) 
+
+    def get_radius(self) :
+        return self.radius
+        
 # Unit (- Context (- Simulator
 
 class Unit(Logger) :
@@ -385,6 +400,9 @@ class Unit(Logger) :
         
     def set_pointer_color(self, color) :
         self.shape.set_pointer_color(color)
+
+    def get_radius(self) :
+        return self.shape.get_radius()
         
 #
 # Oracle
@@ -625,6 +643,7 @@ class Context(Logger) :
                 
             time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
             mass_query = self.get_from_intention(obj_name = obj_name, symbol = "mass")
+            radius_query = self.get_from_intention(obj_name = obj_name, symbol = "radius")
             pos_query = self.get_from_intention(obj_name = obj_name, symbol = "pos")
             angle_query = self.get_from_intention(obj_name = obj_name, symbol = "angle")
             vel_query = self.get_from_intention(obj_name = obj_name, symbol = "vel")
@@ -635,6 +654,8 @@ class Context(Logger) :
             results = {}
             if mass_query is not None : 
                 results["mass"] = self.units[obj_name].get_mass()
+            if radius_query is not None : 
+                results["radius"] = self.units[obj_name].get_radius()
             if pos_query is not None : 
                 pos = self.units[obj_name].get_position()
                 results["pos"] = (pos[0], pos[1]) 
@@ -749,7 +770,7 @@ class Aggregator(Logger) :
 
     object_status_focus = [
             "time", "force", "spin", "transmit", "listen", 
-            "mass", "pos", "angle", "vel", "avel",
+            "mass", "radius", "pos", "angle", "vel", "avel",
             "fill", "stroke", "pointer",
             "radar", "obstacle",
             "set_angle", "set_vel", "set_avel", 
@@ -986,9 +1007,7 @@ class Simulator(Logger) :
                         
                     pygame.display.set_caption("MultiAgent Simulator v1.0 (c) 2017-2018, NiL, csningli@gmail.com")
                     pygame.display.flip()
-                    
                 clock.tick(50)
- 
 
 class Inspector(Logger) :
     def __init__(self) :
@@ -1526,6 +1545,9 @@ class SensorModule(Module) :        # simulate the sensing action interface
 
 class ListenModule(SensorModule) :   # simulate the listen interface 
     symbol = "listen"
+
+class RadiusSensorModule(SensorModule) :   # query for the radius
+    symbol = "radius"
 
 class TimeSensorModule(SensorModule) :    # query for the global time 
     symbol = "time"

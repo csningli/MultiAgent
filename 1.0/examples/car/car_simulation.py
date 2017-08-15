@@ -55,7 +55,7 @@ car_objects = []
 car_units = []
 scene_units = []
 
-wall = Unit(name = "wall", shape = SegmentShape((0, -50), (200, -50)))
+wall = Unit(name = "wall", shape = SegmentShape((-50, -50), (50, -50)))
 scene_units.append(wall)
 
 patrol_car = CarObject(name = "0")
