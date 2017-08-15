@@ -253,10 +253,8 @@ class SegmentShape(BasicShape, Segment) :
     def draw(self, screen) :
         (width, height) = screen.get_size()
         (pv1, pv2) = self.get_ends()
-        pv1[0] = int(width / 2.0 + pv1[0]) 
-        pv1[1] = int(height / 2.0 - pv1[1]) 
-        pv2[0] = int(width / 2.0 + pv2[0]) 
-        pv2[1] = int(height / 2.0 - pv2[1])
+        pv1 = (int(width / 2.0 + pv1[0]), int(height / 2.0 - pv1[1])) 
+        pv2 = (int(width / 2.0 + pv2[0]), int(height / 2.0 - pv2[1]))
         pygame.draw.lines(screen, self.stroke_color, False, [pv1, pv2])
     
     def get_position(self) :
@@ -687,11 +685,11 @@ class Context(Logger) :
                 self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
         
         if len(obstacle_rcvs) > 0 : 
-            obtables = []
+            obstacles = []
             for (name, unit) in self.units.items() :
                 if isinstance(unit.shape, SegmentShape) :
                     ends = unit.shape.get_ends()
-                    obstacle.append((name, ends[0], ends[1], unit.get_velocity()))
+                    obstacles.append((name, ends[0], ends[1], unit.get_velocity()))
             for obj_name in obstacle_rcvs :
                 self.feed_confirm(obj_name = obj_name, results = {"obstacle" : obstacles})
                 
@@ -1561,18 +1559,14 @@ class RadarSensorModule(SensorModule) :
 class PositionSensorModule(SensorModule) :    # query for the position  
     symbol = "pos"
 
-
 class AngleSensorModule(SensorModule) :    # query for the angle (counter clock from east) 
     symbol = "angle"
-
 
 class VelocitySensorModule(SensorModule) :    # query for the velocity 
     symbol = "vel"
 
-
 class AngularVelSensorModule(SensorModule) :    # query for the angular velocity
     symbol = "avel"
-        
         
 class MassSensorModule(SensorModule) :    # query for the angular velocity
     symbol = "mass"
