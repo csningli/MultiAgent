@@ -669,8 +669,8 @@ class Context(Logger) :
             obtables = []
             for (name, unit) in self.units.items() :
                 if isinstance(unit.shape, SegmentShape) :
-                    obstacle.append(unit.shape.get_ends())
-
+                    ends = unit.shape.get_ends()
+                    obstacle.append((name, ends[0], ends[1], unit.get_velocity()))
             for obj_name in obstacle_rcvs :
                 self.feed_confirm(obj_name = obj_name, results = {"obstacle" : obstacles})
                 
