@@ -250,7 +250,7 @@ class SegmentShape(BasicShape, Segment) :
         body = self.body
         pv1 = body.position + self.a.cpvrotate(body.rotation_vector)
         pv2 = body.position + self.b.cpvrotate(body.rotation_vector)
-        return (pv1, pv2) 
+        return (tuple(pv1), tuple(pv2)) 
 
 class CircleShape(BasicShape, Circle) : 
     def draw(self, screen) :
@@ -604,23 +604,24 @@ class Context(Logger) :
         
         self.space.step(self.delta)
         self.timer.tick(self.delta)
-
+        
         # response to the sensors 
 
         self.confirm = {}
-        transmits = [] 
-        listeners = []
+        listen_rcvs = []
+        radar_rcvs = [] 
+        obstacle_rcvs = [] 
+        
         for (obj_name, obj_intention) in self.intention.items() :
-            if self.confirm.get(obj_name, None) is None :
-                self.confirm[obj_name] = {}
-                
-            transmit = self.get_from_intention(obj_name = obj_name, symbol = "transmit")
-            if transmit is not None :
-                transmits.append(transmit) 
-
-            listen = self.get_from_intention(obj_name = obj_name, symbol = "listen")
-            if listen is not None :
-                listeners.append(obj_name) 
+            obstacle_query = self.get_from_intention(obj_name = obj_name, symbol = "obstacle")
+            if obstacle_query is not None :
+                obstacle_rcvs.append(obj_name)
+            radar_query = self.get_from_intention(obj_name = obj_name, symbol = "radar")
+            if radar_query is not None :
+                radar_rcvs.append(obj_name)
+            listen_query = self.get_from_intention(obj_name = obj_name, symbol = "listen")
+            if listen_query is not None :
+                listen_rcvs.append(obj_name) 
                 
             time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
             mass_query = self.get_from_intention(obj_name = obj_name, symbol = "mass")
@@ -646,9 +647,33 @@ class Context(Logger) :
                 results["avel"] = self.units[obj_name].get_angular_velocity() 
             self.feed_confirm(obj_name = obj_name, results = results, check_unit = True)
         
-        for obj_name in listeners :
-            self.feed_confirm(obj_name = obj_name, results = {"listen" : transmits})
-            
+        if len(listen_rcvs) > 0 :
+            transmits = [] 
+            for (obj_name, obj_intention) in self.intention.items() :
+                transmit = self.get_from_intention(obj_name = obj_name, symbol = "transmit")
+                if transmit is not None :
+                    transmits.append(transmit) 
+            for obj_name in listen_rcvs :
+                self.feed_confirm(obj_name = obj_name, results = {"listen" : transmits})
+
+        if len(radar_rcvs) > 0 : 
+            detects = [] 
+            for (obj_name, obj_intention) in self.intention.items() :
+                unit = self.units.get(obj_name, None)
+                if unit is not None : 
+                    detects.append((obj_name, unit.get_position(), unit.get_velocity(), unit.get_radius()))
+            for obj_name in radar_rcvs :
+                self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
+        
+        if len(obstacle_rcvs) > 0 : 
+            obtables = []
+            for (name, unit) in self.units.items() :
+                if isinstance(unit.shape, SegmentShape) :
+                    obstacle.append(unit.shape.get_ends())
+
+            for obj_name in obstacle_rcvs :
+                self.feed_confirm(obj_name = obj_name, results = {"obstacle" : obstacles})
+                
         return self.confirm
 
     def get_from_intention(self, obj_name, symbol) :
@@ -726,7 +751,8 @@ class Aggregator(Logger) :
             "time", "force", "spin", "transmit", "listen", 
             "mass", "pos", "angle", "vel", "avel",
             "fill", "stroke", "pointer",
-            "set_angle", "set_vel", "set_avel" 
+            "radar", "obstacle",
+            "set_angle", "set_vel", "set_avel", 
     ]
 
     data_attrs = {}
@@ -1496,13 +1522,20 @@ class SensorModule(Module) :        # simulate the sensing action interface
             self.output(value = "")
         return self.result
 
+
+
 class ListenModule(SensorModule) :   # simulate the listen interface 
     symbol = "listen"
 
 class TimeSensorModule(SensorModule) :    # query for the global time 
     symbol = "time"
 
+class ObstacleSensorModule(SensorModule) :  # query for obstacles 
+    symbol = "obstacle"
 
+class RadarSensorModule(SensorModule) :
+    symbol = "radar"
+    
 class PositionSensorModule(SensorModule) :    # query for the position  
     symbol = "pos"
 
