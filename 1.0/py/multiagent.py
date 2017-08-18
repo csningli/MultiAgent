@@ -16,10 +16,10 @@ def append_to_sys_path(path = None) :
 
 def test_func(data = None, show = []) :
     def real_test_func(func) : 
-        def func_wrapper(*argv, **kw_argv) :
+        def func_wrapper(*args, **kwargs) :
             print('| Run test: %s' % func.__name__)
             start = time.time()
-            func(*argv, **kw_argv)
+            func(*args, **kwargs)
             end = time.time()
             for label in show :
                 if label in ['INFO', 'ERROR'] :
