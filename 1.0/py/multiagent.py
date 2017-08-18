@@ -16,10 +16,10 @@ def append_to_sys_path(path = None) :
 
 def test_func(data = None, show = []) :
     def real_test_func(func) : 
-        def func_wrapper(*argv) :
+        def func_wrapper(*argv, **kw_argv) :
             print('| Run test: %s' % func.__name__)
             start = time.time()
-            func(*argv)
+            func(*argv, **kw_argv)
             end = time.time()
             for label in show :
                 if label in ['INFO', 'ERROR'] :
@@ -178,6 +178,12 @@ class Object(Logger) :
         if type(symbol).__name__ == "str" : 
             self.status["mem"][symbol + "_value"] = value 
         return self.status["mem"] 
+
+    def get_from_mem(self, symbol) :
+        value = None
+        if type(symbol).__name__ == "str" : 
+            value = self.status["mem"].get(symbol + "_value", None)
+        return value
         
 class BasicShape(Logger) :
     stroke_color = THECOLORS["blue"]
@@ -680,7 +686,7 @@ class Context(Logger) :
             for (obj_name, obj_intention) in self.intention.items() :
                 unit = self.units.get(obj_name, None)
                 if unit is not None : 
-                    detects.append((obj_name, unit.get_position(), unit.get_velocity(), unit.get_radius()))
+                    detects.append((obj_name, unit.get_position(), unit.get_velocity(), unit.get_radius(), unit.get_angle()))
             for obj_name in radar_rcvs :
                 self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
         
@@ -820,7 +826,7 @@ class Driver(Logger) :
             'data' : None,
     }
     
-    def __init__(self, aggr = None, context = None, objects = None, data = None) :
+    def __init__(self, aggr = None, context = None, objects = None, data = None, record_all = False) :
        
         self.context = None
         if context is not None :
@@ -859,6 +865,7 @@ class Driver(Logger) :
         self.intention = {}
         self.confirm = {}
         self.step_count = 0
+        self.record_all = record_all
         
     def step(self) :
         step_data = None
@@ -874,7 +881,8 @@ class Driver(Logger) :
                     obj_data = {}
                 obj.status['post'] = {}
                 obj.step()
-                obj.snap(obj_data = obj_data)
+                if self.record_all :
+                    obj.snap(obj_data = obj_data)
                 if obj_data is not None and len(obj_data) > 0 :
                     if step_data.get(obj.name, None) is None :
                         step_data[obj.name] = {}
@@ -915,7 +923,7 @@ class Simulator(Logger) :
         else :
             self.error("Invalid 'driver'.")
 
-    def simulate(self, steps = None, inspector = None, graphics = False) :
+    def simulate(self, steps = None, inspector = None, graphics = False, width = 800, height = 800) :
         if self.driver is None :
             self.error("No valid 'driver' given.")
             return False 
@@ -929,8 +937,6 @@ class Simulator(Logger) :
         pygame.init()
 
         screen = None
-        width = 800
-        height = 800
         if graphics :
              screen = pygame.display.set_mode((width, height))
         
