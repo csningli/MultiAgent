@@ -46,8 +46,7 @@ class CarContext(Context) :
                     r = unit.shape.get_range()
                     p = unit.get_position()
                     (width, height) = screen.get_size()
-                    p[0] = int(width / 2.0 + p[0] - 5.0) 
-                    p[1] = int(height / 2.0 - p[1] - r[1] - 10.0) 
+                    p = (int(width / 2.0 + p[0] - 5.0), int(height / 2.0 - p[1] - r[1] - 10.0))
                     screen.blit(font.render(unit.name, 1, THECOLORS["black"]), p)
  
  
@@ -69,7 +68,7 @@ car_context = CarContext(delta = 1.0 / 50.0, units = car_units + scene_units)
 car_driver = Driver(context = car_context, objects = car_objects, data = Data())
 car_simulator = Simulator(driver = car_driver)
 
-@test_func
+@test_func()
 def test_simulator() :
     car_simulator.simulate(steps = None, inspector = None, graphics = True)
     data = car_simulator.driver.data

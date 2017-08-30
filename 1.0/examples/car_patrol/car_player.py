@@ -7,7 +7,7 @@ sys.path.append("../../py")
 from multiagent import * 
 from car_simulation import car_objects, car_context
 
-@test_func
+@test_func()
 def test_player(filename) :
     data = Data()
     data.from_file(filename)

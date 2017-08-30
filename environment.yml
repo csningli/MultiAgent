@@ -1,0 +1,9 @@
+name: multiagent_1_0
+dependencies:
+- python = 2.7
+- pip >= 9
+- numpy
+- scipy
+- pip:
+  - pygame == 1.9.2
+  - pymunk == 5.1.0
