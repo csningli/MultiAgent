@@ -6,12 +6,14 @@ sys.path.append("../../py")
 from multiagent import * 
 
 class CarProcessModule(Module) :
+
     targets = [
         (100.0, -100.0), 
         (100.0, 100.0), 
         (-100.0, 100.0), 
         (-100.0, -100.0), 
     ] 
+    
     def perform(self, msg, ram) :
         super(CarProcessModule, self).perform(msg = msg, ram = ram)
         vel = 30.0
@@ -25,20 +27,28 @@ class CarProcessModule(Module) :
         self.activate_sensors(symbols = ["time", "listen"])
         return self.result
 
+
 class CarObject(Object) :
     def __init__(self, name) :
-        mods = [CarProcessModule(), ForceModule(), SetAVelModule(), MoveModule(), TimeSensorModule(), MassSensorModule(), PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(), AngularVelSensorModule(), TransmitModule(), ListenModule()]
+        mods = [
+                CarProcessModule(), ForceModule(), SetAVelModule(), 
+                MoveModule(), TimeSensorModule(), MassSensorModule(), 
+                PositionSensorModule(), AngleSensorModule(), VelocitySensorModule(),
+                AngularVelSensorModule(), TransmitModule(), ListenModule(),
+        ]
         super(CarObject, self).__init__(name = name, mods = mods)
 
     def step(self) :
         super(CarObject, self).step()
         self.info("Object %s's status: %s" % (self.name, self.status))
 
+
 class CarContext(Context) :
     def draw(self, screen) :
         super(CarContext, self).draw(screen)
 
         # draw the name above each unit
+        
         font = pygame.font.Font(None, 16)
         for unit in self.units.values() :
             if unit.shape is not None :
@@ -49,32 +59,58 @@ class CarContext(Context) :
                     p = (int(width / 2.0 + p[0] - 5.0), int(height / 2.0 - p[1] - r[1] - 10.0))
                     screen.blit(font.render(unit.name, 1, THECOLORS["black"]), p)
  
- 
-car_objects = []
-car_units = []
-scene_units = []
 
-wall = Unit(name = "wall", shape = SegmentShape((-50, -50), (50, -50)))
-scene_units.append(wall)
-
+objects = []
 patrol_car = CarObject(name = "0")
 patrol_unit = Unit(name = patrol_car.name)
 patrol_unit.set_position((0.0, 0.0))
+objects.append(patrol_car)
 
-car_objects.append(patrol_car)
-car_units.append(patrol_unit)
+units = []
+units.append(patrol_unit)
+
+scene_units = []
+wall = Unit(name = "wall", shape = SegmentShape((-10, -50), (10, -50)))
+scene_units.append(wall)
     
-car_context = CarContext(delta = 1.0 / 50.0, units = car_units + scene_units)
-car_driver = Driver(context = car_context, objects = car_objects, data = Data())
-car_simulator = Simulator(driver = car_driver)
+context = CarContext(delta = 1.0 / 50.0, units = units + scene_units)
 
 @test_func()
-def test_simulator() :
-    car_simulator.simulate(steps = None, inspector = None, graphics = True)
-    data = car_simulator.driver.data
+def simulate(filename = None) :
+    driver = Driver(context = context, objects = objects, data = Data())
+    simulator = Simulator(driver = driver)
+    simulator.simulate(steps = None, inspector = None, graphics = True)
+    data = simulator.driver.data
     if data is not None : 
-        data.to_file()
+        if filename is not None :
+            filename = data.to_file(filename)
+        else :
+            filename = data.to_file()
+
+@test_func()
+def play(filename) :
+    data = Data()
+    data.from_file(filename)
+  
+    zipper = Zipper(data = data, context = context, objects = objects)
+    player = Player(zipper = zipper)
+    player.play(steps = None, inspector = None, graphics = True)
+    
     
 if __name__ == '__main__' :
-    test_simulator()
+    if len(sys.argv) < 2 :
+        print("Usage: python patrol_car.py [simulate/play] [.data]")
+        exit(1)
+        
+    filename = None
+    if len(sys.argv) > 2 :
+        filename = sys.argv[2]
+    if sys.argv[1] == "simulate" : 
+        simulate(filename)
+    elif sys.argv[1] == "play" :
+        if filename is not None :
+            play(filename)
+        else :
+            print("[.data] is invalid: %s" % filename)
+            exit(1)
     
