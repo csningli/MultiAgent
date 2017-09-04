@@ -98,8 +98,9 @@ def play(filename) :
     
     
 if __name__ == '__main__' :
+    usage = "Usage: python patrol_car.py [simulate/play] [.data]"
     if len(sys.argv) < 2 :
-        print("Usage: python patrol_car.py [simulate/play] [.data]")
+        print(usage)
         exit(1)
         
     filename = None
@@ -112,5 +113,6 @@ if __name__ == '__main__' :
             play(filename)
         else :
             print("[.data] is invalid: %s" % filename)
+            print(usage)
             exit(1)
     
