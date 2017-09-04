@@ -67,7 +67,7 @@ The simulation can be replayed, as long as the corresponding ".data" file is on 
 The simulation data can be removed by simply deletion. When there are a lot of them, the script
 "clear.sh" can offer some help.
 	
-	(multiagent_1_0)[user @ patrol_car] clear.sh
+	(multiagent_1_0)[user @ patrol_car] ./clear.sh
 	
 # Versions
 

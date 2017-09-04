@@ -70,8 +70,14 @@ units = []
 units.append(patrol_unit)
 
 scene_units = []
-wall = Unit(name = "wall", shape = SegmentShape((-10, -50), (10, -50)))
-scene_units.append(wall)
+wall_west = Unit(name = "wall_west", shape = SegmentShape((-50, -10), (-50, 10)))
+wall_east = Unit(name = "wall_east", shape = SegmentShape((50, -10), (50, 10)))
+wall_north = Unit(name = "wall_north", shape = SegmentShape((-10, 50), (10, 50)))
+wall_south = Unit(name = "wall_south", shape = SegmentShape((-10, -50), (10, -50)))
+scene_units.append(wall_west)
+scene_units.append(wall_east)
+scene_units.append(wall_north)
+scene_units.append(wall_south)
     
 context = CarContext(delta = 1.0 / 50.0, units = units + scene_units)
 
