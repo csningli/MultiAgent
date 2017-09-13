@@ -3,20 +3,20 @@ import sys, os, time, math
 
 sys.path.append("../../py")
 
-from multiagent import Object, Driver, Simulator, Data, test_func
-from amoebot import Unit, Context 
+from multiagent import Driver, Simulator, Data, test_func
+from amoebot import AmoebotObject, AmoebotUnit, AmoebotContext 
 
 objects = []
-obj = Object(name = "0", mods = [])
+obj = AmoebotObject(name = "0", mods = [])
 objects.append(obj)
 
 units = []
-unit = Unit(name = obj.name)
+unit = AmoebotUnit(name = obj.name)
 unit.set_head_pos((0.0, 0.0))
 unit.set_tail_pos((0.0, 0.0))
 units.append(unit)
 
-context = Context(delta = 1.0 / 50.0, units = units)
+context = AmoebotContext(delta = 1.0 / 50.0, units = units)
 
 @test_func()
 def simulate(filename = None) :

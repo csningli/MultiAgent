@@ -8,7 +8,7 @@ from numpy.linalg import norm
 
 from utils import distance_to_line
 
-from multiagent import Timer, Space, Logger, check_attrs
+from multiagent import Timer, Space, Context, Object, Logger, check_attrs
 
 amoebot_paras = {
     "radius" : 10.0,
@@ -45,9 +45,13 @@ def xy_to_pq(b) :
     return a
 
 
+class AmoebotObject(Object) :
+    pass
+
 class BotShape(Logger) :
     def __init__(self) :
         self.radius = float(amoebot_paras["radius"])
+        self.body = None
         self.head_pos = array([0.0, 0.0])
         self.tail_pos = array([0.0, 0.0])
         self.stroke_color = THECOLORS["black"]
@@ -99,7 +103,7 @@ class BotShape(Logger) :
             pygame.draw.circle(screen, self.fill_color, p, int(self.radius / 2.0), 4)
             
             
-class Unit(Logger) :
+class AmoebotUnit(Logger) :
     
     def __init__(self, name) :
         self.name = str(name)
@@ -151,216 +155,16 @@ class Unit(Logger) :
                 self.set_head_pos(self.get_tail_pos())
 
     
+class Space(Logger) :
+    def add(self, body, shape) :
+        pass
+    def step(self, delta) :
+        pass
             
-            
-class Context(Logger) :
-
-    unit_attrs = {
-            'name' : None,
-            'shape' : None,
-    }
-    
-    space_attrs = {
-            'add' : None, 
-            'step' : None,
-    } 
-
-    timer_attrs = {
-            'tick' : None, 
-    } 
-
-    intention_attrs = {
-        "get" : None,
-        "items" : {
-            "__iter__" : None,
-        },
-        "__getitem__" : {
-            "items" : {
-                "__iter__" : None,
-            },
-        },
-    }
-
-    step_data_attrs = {
-            'get' : None, 
-            'keys' : None, 
-            'items' : None, 
-            '__getitem__' : None, 
-    } 
-    
-    def __init__(self, delta, space = None, timer = None, units = None) :  
-        self.delta = 1.0 / 50.0
-        if type(delta).__name__ == 'float' :
-            self.delta = delta
-        else :
-            self.error('Invalid delta. Use default value: %f' % self.delta)
+class AmoebotContext(Context) :
+    def __init__(self, delta, timer = None, units = None) :
+        super(AmoebotContext, self).__init__(delta = delta, space = Space(), timer = timer, units = units)
         
-        self.space = None
-        if space is not None :
-            if check_attrs(space, self.space_attrs) :
-                self.space = space
-            else :
-                self.error("Invalid 'space'.")
-        else : 
-            self.space = Space()
-            
-        self.timer = None
-        if timer is not None :
-            if check_attrs(timer, self.timer_attrs) :
-                self.timer = timer
-            else :
-                self.error("Invalid 'timer'.")
-        else : 
-            self.timer = Timer()
-       
-        self.units = {}
-        self.names = []
-        if units is not None and hasattr(units, '__iter__') :
-            for unit in units :
-                if check_attrs(unit, self.unit_attrs) :
-                    self.units[unit.name] = unit
-                    #self.space.add(unit.shape.body, unit.shape)
-                    if unit.name.isdigit() and unit.name not in self.names :
-                        self.names.append(int(unit.name))
-                else :
-                    self.error("Invalid 'unit'.")
-        self.names.sort()
-        self.intention = {} 
-        self.confirm = {}
-    
-    
-    def next_name(self) :
-        name = len(self.names)
-        if len(self.names) > 0 and self.names[-1] > len(self.names) - 1 :
-            for i in range(len(self.names)) :
-                if i < self.names[i] :
-                    name = i
-                    break
-        self.names.insert(name, name)
-        return str(name) 
-
-
-    def bind_objects(self, objects) :
-        if objects is not None and hasattr(objects, '__iter__') :
-            for obj in objects :
-                if hasattr(obj, 'name') and type(obj.name).__name__ == 'str' :
-                    if obj.name not in self.units.keys() :
-                        self.error("No shape has name: %s" % obj.name)
-                else :
-                    self.error("Invalid 'object'.")
-
-
-    def judge(self, intention) :
-        self.intention = {}
-        if check_attrs(intention, self.intention_attrs) :
-            self.intention = intention
-
-        # collect and apply the physics information
-        
-        for (obj_name, obj_intention) in self.intention.items() :
-            if obj_name in self.units.keys() :
-                #vel = self.get_from_intention(obj_name = obj_name, symbol = "set_vel")
-                #if vel is not None and type(vel).__name__ == "tuple" and len(vel) == 2 :
-                    #self.units[obj_name].set_velocity(vel)
-                stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
-                if stroke is not None :
-                    self.units[obj_name].set_stroke_color(stroke)
-                fill = self.get_from_intention(obj_name = obj_name, symbol = "fill")
-                if fill is not None :
-                    self.units[obj_name].set_fill_color(fill)
-
-        # physics engine step 
-        
-        self.space.step(self.delta)
-        self.timer.tick(self.delta)
-        
-        # response to the sensors 
-
-        self.confirm = {}
-        listen_rcvs = []
-        radar_rcvs = [] 
-        obstacle_rcvs = [] 
-        
-        for (obj_name, obj_intention) in self.intention.items() :
-            obstacle_query = self.get_from_intention(obj_name = obj_name, symbol = "obstacle")
-            if obstacle_query is not None :
-                obstacle_rcvs.append(obj_name)
-            radar_query = self.get_from_intention(obj_name = obj_name, symbol = "radar")
-            if radar_query is not None :
-                radar_rcvs.append(obj_name)
-            listen_query = self.get_from_intention(obj_name = obj_name, symbol = "listen")
-            if listen_query is not None :
-                listen_rcvs.append(obj_name) 
-                
-            time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
-            mass_query = self.get_from_intention(obj_name = obj_name, symbol = "mass")
-            radius_query = self.get_from_intention(obj_name = obj_name, symbol = "radius")
-            pos_query = self.get_from_intention(obj_name = obj_name, symbol = "pos")
-            angle_query = self.get_from_intention(obj_name = obj_name, symbol = "angle")
-            vel_query = self.get_from_intention(obj_name = obj_name, symbol = "vel")
-            avel_query = self.get_from_intention(obj_name = obj_name, symbol = "avel")
-
-            if time_query is not None :
-                self.feed_confirm(obj_name = obj_name, results = {"time" : self.timer.value})
-            results = {}
-            if mass_query is not None : 
-                results["mass"] = self.units[obj_name].get_mass()
-            if radius_query is not None : 
-                results["radius"] = self.units[obj_name].get_radius()
-            if pos_query is not None : 
-                pos = self.units[obj_name].get_position()
-                results["pos"] = (pos[0], pos[1]) 
-            if angle_query is not None : 
-                results["angle"] = self.units[obj_name].get_angle() 
-            if vel_query is not None : 
-                vel = self.units[obj_name].get_velocity()
-                results["vel"] = (vel[0], vel[1]) 
-            if avel_query is not None : 
-                results["avel"] = self.units[obj_name].get_angular_velocity() 
-            self.feed_confirm(obj_name = obj_name, results = results, check_unit = True)
-        
-        if len(listen_rcvs) > 0 :
-            transmits = [] 
-            for (obj_name, obj_intention) in self.intention.items() :
-                transmit = self.get_from_intention(obj_name = obj_name, symbol = "transmit")
-                if transmit is not None :
-                    transmits.append(transmit) 
-            for obj_name in listen_rcvs :
-                self.feed_confirm(obj_name = obj_name, results = {"listen" : transmits})
-
-        if len(radar_rcvs) > 0 : 
-            detects = [] 
-            for (obj_name, obj_intention) in self.intention.items() :
-                unit = self.units.get(obj_name, None)
-                if unit is not None : 
-                    detects.append((obj_name, unit.get_position(), unit.get_velocity(), unit.get_radius(), unit.get_angle()))
-            for obj_name in radar_rcvs :
-                self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
-        
-        if len(obstacle_rcvs) > 0 : 
-            obstacles = []
-            for (name, unit) in self.units.items() :
-                if isinstance(unit.shape, SegmentShape) :
-                    ends = unit.shape.get_ends()
-                    obstacles.append((name, ends[0], ends[1], unit.get_velocity()))
-            for obj_name in obstacle_rcvs :
-                self.feed_confirm(obj_name = obj_name, results = {"obstacle" : obstacles})
-                
-        return self.confirm
-
-    def get_from_intention(self, obj_name, symbol) :
-        value = None
-        if self.intention is not None and self.intention.get(obj_name, None) is not None :
-            value = self.intention[obj_name].get(symbol, None)
-        return value
-
-    def feed_confirm(self, obj_name, results, check_unit = False) :
-        if type(obj_name).__name__ == "str" and (not check_unit or self.units.get(obj_name, None) is not None) and type(results).__name__ == "dict" :
-            for (symbol, value) in results.items() :
-                if self.confirm.get(obj_name, None) is None :
-                    self.confirm[obj_name] = {}
-                self.confirm[obj_name][symbol + "_result"] = value
-                
     def snap(self, step_data) :
         if step_data is not None and check_attrs(step_data, self.step_data_attrs) :
             for (name, unit) in self.units.items() :
@@ -418,7 +222,6 @@ class Context(Logger) :
         start = [0, height / 2]
         end = [width, height / 2]
         pygame.draw.line(screen, THECOLORS["gray"], start, end, 1)
-
 
         q_ceil = int(math.ceil((height / unit) / 2))
         for i in range(1, q_ceil) :
@@ -479,6 +282,7 @@ class Context(Logger) :
         for unit in self.units.values() :
             if unit.shape is not None :
                 unit.shape.draw(screen)
+                
                 
 class Aggregator(Logger) :
 

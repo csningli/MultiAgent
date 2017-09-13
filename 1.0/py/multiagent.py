@@ -497,9 +497,7 @@ class Context(Logger) :
 
     unit_attrs = {
             'name' : None,
-            'shape' : {
-                    'body' : None,  
-            },
+            'shape' : None,  
     }
     
     space_attrs = {
