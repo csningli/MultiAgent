@@ -13,7 +13,7 @@ objects.append(obj)
 units = []
 unit = AmoebotUnit(name = obj.name)
 unit.set_head_pos((0.0, 0.0))
-unit.set_tail_pos((0.0, 0.0))
+unit.set_tail_pos((0.0, 1.0))
 units.append(unit)
 
 context = AmoebotContext(delta = 1.0 / 50.0, units = units)

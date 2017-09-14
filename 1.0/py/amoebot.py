@@ -58,7 +58,7 @@ class BotShape(Logger) :
         self.fill_color = THECOLORS["black"]
 
     def is_expanded(self) :
-        return norm(self.head_pos - self.tail_pos) < 0.1
+        return not norm(self.head_pos - self.tail_pos) < 0.1
     
     def get_head_pos(self) :
         return self.head_pos
@@ -87,20 +87,47 @@ class BotShape(Logger) :
     def draw(self, screen) :
         (width, height) = screen.get_size()
 
-        # adjust the drawing coordinates to make sure (0, 0) stays in the center
+        head_adjusted = [0, 0]
+        head_xy = pq_to_xy(self.head_pos)
+        head_adjusted[0] = int(width / 2.0 + head_xy[0]) 
+        head_adjusted[1] = int(height / 2.0 - head_xy[1]) 
         
-        p = [0, 0]
-        p[0] = int(width / 2.0 + self.head_pos[0]) 
-        p[1] = int(height / 2.0 - self.head_pos[1]) 
+        if not self.is_expanded() :
+            pygame.draw.circle(screen, self.stroke_color, head_adjusted, int(self.radius), 2)
+            pygame.draw.circle(screen, self.fill_color, head_adjusted, int(self.radius / 2.0), 4)
+        else : 
+            tail_adjusted = [0, 0]
+            tail_xy = pq_to_xy(self.tail_pos)
+            tail_adjusted[0] = int(width / 2.0 + tail_xy[0]) 
+            tail_adjusted[1] = int(height / 2.0 - tail_xy[1]) 
 
-        pygame.draw.circle(screen, self.stroke_color, p, int(self.radius), 2)
-        pygame.draw.circle(screen, self.fill_color, p, int(self.radius / 2.0), 4)
-        
-        if self.is_expanded() :
-            p[0] = int(width / 2.0 + self.tail_pos[0]) 
-            p[1] = int(height / 2.0 - self.tail_pos[1]) 
-            pygame.draw.circle(screen, self.stroke_color, p, int(self.radius), 2)
-            pygame.draw.circle(screen, self.fill_color, p, int(self.radius / 2.0), 4)
+            diff = array(head_xy) - array(tail_xy)
+            angle = math.acos(diff[0] / norm(array(diff)))
+            if diff[1] <  0 :
+                angle = -angle + 2 * math.pi
+
+            pygame.draw.arc(screen, self.stroke_color, 
+                pygame.Rect(head_adjusted[0] - int(self.radius), head_adjusted[1] - int(self.radius),
+                int(self.radius * 2), int(self.radius * 2)), angle - math.pi / 2.0, angle + math.pi / 2.0, 2)
+            pygame.draw.arc(screen, self.stroke_color, 
+                pygame.Rect(tail_adjusted[0] - int(self.radius), tail_adjusted[1] - int(self.radius),
+                int(self.radius * 2), int(self.radius * 2)), angle + math.pi / 2.0, angle - math.pi / 2.0, 2)
+
+            start = [0, 0]
+            end = [0, 0]
+            start[0] = int(head_adjusted[0] + self.radius * math.cos(angle - math.pi / 2.0))
+            start[1] = int(head_adjusted[1] - self.radius * math.sin(angle - math.pi / 2.0))
+            end[0] = int(tail_adjusted[0] + self.radius * math.cos(angle - math.pi / 2.0))
+            end[1] = int(tail_adjusted[1] - self.radius * math.sin(angle - math.pi / 2.0))
+            pygame.draw.line(screen, self.stroke_color, start, end, 2)
+            start[0] = int(head_adjusted[0] + self.radius * math.cos(angle + math.pi / 2.0))
+            start[1] = int(head_adjusted[1] - self.radius * math.sin(angle + math.pi / 2.0))
+            end[0] = int(tail_adjusted[0] + self.radius * math.cos(angle + math.pi / 2.0))
+            end[1] = int(tail_adjusted[1] - self.radius * math.sin(angle + math.pi / 2.0))
+            pygame.draw.line(screen, self.stroke_color, start, end, 2)
+            pygame.draw.circle(screen, self.fill_color, head_adjusted, int(self.radius / 2.0), 4)
+            pygame.draw.circle(screen, self.fill_color, tail_adjusted, int(self.radius / 2.0), 4)
+            #pygame.draw.line(screen, self.fill_color, head_adjusted, tail_adjusted, 2)
             
             
 class AmoebotUnit(Logger) :
