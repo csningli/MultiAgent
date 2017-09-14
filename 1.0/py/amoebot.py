@@ -191,7 +191,107 @@ class Space(Logger) :
 class AmoebotContext(Context) :
     def __init__(self, delta, timer = None, units = None) :
         super(AmoebotContext, self).__init__(delta = delta, space = Space(), timer = timer, units = units)
+    
+    def judge(self, intention) :
+        self.intention = {}
+        if check_attrs(intention, self.intention_attrs) :
+            self.intention = intention
+
+        # collect and apply the physics information
         
+        for (obj_name, obj_intention) in self.intention.items() :
+            if obj_name in self.units.keys() :
+                contract = self.get_from_intention(obj_name = obj_name, symbol = "contract")
+                if contract is not None and type(contract).__name__ == "str":
+                    self.units[obj_name].contract_to(contract)
+                expand = self.get_from_intention(obj_name = obj_name, symbol = "expand")
+                if expand is not None and type(expand).__name__ == "tuple" and len(expand) == 2 :
+                    self.units[obj_name].expand_to(expand)
+                stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
+                if stroke is not None :
+                    self.units[obj_name].set_stroke_color(stroke)
+                fill = self.get_from_intention(obj_name = obj_name, symbol = "fill")
+                if fill is not None :
+                    self.units[obj_name].set_fill_color(fill)
+
+        # physics engine step 
+        
+        self.space.step(self.delta)
+        self.timer.tick(self.delta)
+        
+        # response to the sensors 
+
+        self.confirm = {}
+        listen_rcvs = []
+        radar_rcvs = [] 
+        obstacle_rcvs = [] 
+        
+        for (obj_name, obj_intention) in self.intention.items() :
+            obstacle_query = self.get_from_intention(obj_name = obj_name, symbol = "obstacle")
+            if obstacle_query is not None :
+                obstacle_rcvs.append(obj_name)
+            radar_query = self.get_from_intention(obj_name = obj_name, symbol = "radar")
+            if radar_query is not None :
+                radar_rcvs.append(obj_name)
+            listen_query = self.get_from_intention(obj_name = obj_name, symbol = "listen")
+            if listen_query is not None :
+                listen_rcvs.append(obj_name) 
+                
+            time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
+            mass_query = self.get_from_intention(obj_name = obj_name, symbol = "mass")
+            radius_query = self.get_from_intention(obj_name = obj_name, symbol = "radius")
+            pos_query = self.get_from_intention(obj_name = obj_name, symbol = "pos")
+            angle_query = self.get_from_intention(obj_name = obj_name, symbol = "angle")
+            vel_query = self.get_from_intention(obj_name = obj_name, symbol = "vel")
+            avel_query = self.get_from_intention(obj_name = obj_name, symbol = "avel")
+
+            if time_query is not None :
+                self.feed_confirm(obj_name = obj_name, results = {"time" : self.timer.value})
+            results = {}
+            if mass_query is not None : 
+                results["mass"] = self.units[obj_name].get_mass()
+            if radius_query is not None : 
+                results["radius"] = self.units[obj_name].get_radius()
+            if pos_query is not None : 
+                pos = self.units[obj_name].get_position()
+                results["pos"] = (pos[0], pos[1]) 
+            if angle_query is not None : 
+                results["angle"] = self.units[obj_name].get_angle() 
+            if vel_query is not None : 
+                vel = self.units[obj_name].get_velocity()
+                results["vel"] = (vel[0], vel[1]) 
+            if avel_query is not None : 
+                results["avel"] = self.units[obj_name].get_angular_velocity() 
+            self.feed_confirm(obj_name = obj_name, results = results, check_unit = True)
+        
+        if len(listen_rcvs) > 0 :
+            transmits = [] 
+            for (obj_name, obj_intention) in self.intention.items() :
+                transmit = self.get_from_intention(obj_name = obj_name, symbol = "transmit")
+                if transmit is not None :
+                    transmits.append(transmit) 
+            for obj_name in listen_rcvs :
+                self.feed_confirm(obj_name = obj_name, results = {"listen" : transmits})
+
+        if len(radar_rcvs) > 0 : 
+            detects = [] 
+            for (obj_name, obj_intention) in self.intention.items() :
+                unit = self.units.get(obj_name, None)
+                if unit is not None : 
+                    detects.append((obj_name, unit.get_position(), unit.get_velocity(), unit.get_radius(), unit.get_angle()))
+            for obj_name in radar_rcvs :
+                self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
+        
+        if len(obstacle_rcvs) > 0 : 
+            obstacles = []
+            for (name, unit) in self.units.items() :
+                if isinstance(unit.shape, SegmentShape) :
+                    ends = unit.shape.get_ends()
+                    obstacles.append((name, ends[0], ends[1], unit.get_velocity()))
+            for obj_name in obstacle_rcvs :
+                self.feed_confirm(obj_name = obj_name, results = {"obstacle" : obstacles})
+                
+        return self.confirm
     def snap(self, step_data) :
         if step_data is not None and check_attrs(step_data, self.step_data_attrs) :
             for (name, unit) in self.units.items() :
@@ -311,43 +411,14 @@ class AmoebotContext(Context) :
                 unit.shape.draw(screen)
                 
                 
-class Aggregator(Logger) :
+class AmoebotAggregator(Aggregator) :
 
     object_status_focus = [
-            "time", "force", "spin", "transmit", "listen", 
-            "mass", "radius", "pos", "angle", "vel", "avel",
-            "fill", "stroke", "pointer",
+            "time", "transmit", "listen", 
+            "radius", "pos", "fill", "stroke", 
             "radar", "obstacle",
-            "set_angle", "set_vel", "set_avel", 
+            "expand", "contract",
     ]
-
-    data_attrs = {}
-    
-    def pre(self, objects, confirm = None) :
-        if confirm is not None and len(confirm) > 0 :
-            for obj in objects :
-                obj_confirm = confirm.get(obj.name, None)
-                if obj_confirm is not None :
-                    for key in obj_confirm.keys() :
-                        obj.status['pre'][key] = obj_confirm[key]
-
-
-    def post(self, objects) :
-        intention = {} 
-        for obj in objects :
-            obj_intention = {}
-            for key in self.object_status_focus :
-                focus_content = obj.status['post'].get(key, None)
-                if focus_content is not None :
-                    obj_intention[key] = focus_content 
-            if len(obj_intention) > 0 :
-                if intention.get(obj.name, None) is None :
-                    intention[obj.name] = obj_intention
-                else :
-                    self.error("Found duplicate object: [%s]" % obj.name)
-        return intention
-
-
 
 
 if __name__ == '__main__' :
