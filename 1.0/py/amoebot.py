@@ -8,7 +8,7 @@ from numpy.linalg import norm
 
 from utils import distance_to_line
 
-from multiagent import Timer, Space, Context, Object, Logger, check_attrs
+from multiagent import Timer, Space, Aggregator, Context, Object, Module, Logger, check_attrs
 
 amoebot_paras = {
     "radius" : 10.0,
@@ -55,7 +55,8 @@ class BotShape(Logger) :
         self.head_pos = array([0.0, 0.0])
         self.tail_pos = array([0.0, 0.0])
         self.stroke_color = THECOLORS["black"]
-        self.fill_color = THECOLORS["black"]
+        self.head_color = THECOLORS["red"]
+        self.tail_color = THECOLORS["blue"]
 
     def is_expanded(self) :
         return not norm(self.head_pos - self.tail_pos) < 0.1
@@ -78,56 +79,50 @@ class BotShape(Logger) :
     def set_stroke_color(self, color) :
         self.stroke_color = color
 
-    def get_fill_color(self) :
-        return self.fill_color
-
-    def set_fill_color(self, color) :
-        self.fill_color = color
-
     def draw(self, screen) :
         (width, height) = screen.get_size()
 
         head_adjusted = [0, 0]
         head_xy = pq_to_xy(self.head_pos)
-        head_adjusted[0] = int(width / 2.0 + head_xy[0]) 
-        head_adjusted[1] = int(height / 2.0 - head_xy[1]) 
+        head_adjusted[0] = int(round(width / 2.0 + head_xy[0]))
+        head_adjusted[1] = int(round(height / 2.0 - head_xy[1]))
         
         if not self.is_expanded() :
             pygame.draw.circle(screen, self.stroke_color, head_adjusted, int(self.radius), 2)
-            pygame.draw.circle(screen, self.fill_color, head_adjusted, int(self.radius / 2.0), 4)
+            pygame.draw.circle(screen, self.head_color, head_adjusted, int(self.radius / 2.0), 4)
         else : 
             tail_adjusted = [0, 0]
             tail_xy = pq_to_xy(self.tail_pos)
-            tail_adjusted[0] = int(width / 2.0 + tail_xy[0]) 
-            tail_adjusted[1] = int(height / 2.0 - tail_xy[1]) 
+            tail_adjusted[0] = int(round(width / 2.0 + tail_xy[0]))
+            tail_adjusted[1] = int(round(height / 2.0 - tail_xy[1]))
 
             diff = array(head_xy) - array(tail_xy)
             angle = math.acos(diff[0] / norm(array(diff)))
-            if diff[1] <  0 :
-                angle = -angle + 2 * math.pi
-
-            pygame.draw.arc(screen, self.stroke_color, 
-                pygame.Rect(head_adjusted[0] - int(self.radius), head_adjusted[1] - int(self.radius),
-                int(self.radius * 2), int(self.radius * 2)), angle - math.pi / 2.0, angle + math.pi / 2.0, 2)
-            pygame.draw.arc(screen, self.stroke_color, 
-                pygame.Rect(tail_adjusted[0] - int(self.radius), tail_adjusted[1] - int(self.radius),
-                int(self.radius * 2), int(self.radius * 2)), angle + math.pi / 2.0, angle - math.pi / 2.0, 2)
-
-            start = [0, 0]
-            end = [0, 0]
-            start[0] = int(head_adjusted[0] + self.radius * math.cos(angle - math.pi / 2.0))
-            start[1] = int(head_adjusted[1] - self.radius * math.sin(angle - math.pi / 2.0))
-            end[0] = int(tail_adjusted[0] + self.radius * math.cos(angle - math.pi / 2.0))
-            end[1] = int(tail_adjusted[1] - self.radius * math.sin(angle - math.pi / 2.0))
-            pygame.draw.line(screen, self.stroke_color, start, end, 2)
-            start[0] = int(head_adjusted[0] + self.radius * math.cos(angle + math.pi / 2.0))
-            start[1] = int(head_adjusted[1] - self.radius * math.sin(angle + math.pi / 2.0))
-            end[0] = int(tail_adjusted[0] + self.radius * math.cos(angle + math.pi / 2.0))
-            end[1] = int(tail_adjusted[1] - self.radius * math.sin(angle + math.pi / 2.0))
-            pygame.draw.line(screen, self.stroke_color, start, end, 2)
-            pygame.draw.circle(screen, self.fill_color, head_adjusted, int(self.radius / 2.0), 4)
-            pygame.draw.circle(screen, self.fill_color, tail_adjusted, int(self.radius / 2.0), 4)
-            #pygame.draw.line(screen, self.fill_color, head_adjusted, tail_adjusted, 2)
+            pygame.draw.circle(screen, self.stroke_color, head_adjusted, int(self.radius), 2)
+            pygame.draw.circle(screen, self.stroke_color, tail_adjusted, int(self.radius), 2)
+            pygame.draw.circle(screen, self.head_color, head_adjusted, int(self.radius / 2.0), 4)
+            pygame.draw.circle(screen, self.tail_color, tail_adjusted, int(self.radius / 2.0), 4)
+            pygame.draw.line(screen, self.stroke_color, head_adjusted, tail_adjusted, 4)
+            
+            #pygame.draw.arc(screen, self.stroke_color, 
+                #pygame.Rect(head_adjusted[0] - int(self.radius), head_adjusted[1] - int(self.radius),
+                #int(self.radius * 2), int(self.radius * 2)), angle - math.pi / 2.0, angle + math.pi / 2.0, 2)
+            #pygame.draw.arc(screen, self.stroke_color, 
+                #pygame.Rect(tail_adjusted[0] - int(self.radius), tail_adjusted[1] - int(self.radius),
+                #int(self.radius * 2), int(self.radius * 2)), angle + math.pi / 2.0, angle - math.pi / 2.0, 2)
+            #start = [0, 0]
+            #end = [0, 0]
+            #start[0] = int(round(head_adjusted[0] + self.radius * math.cos(angle - math.pi / 2.0)))
+            #start[1] = int(round(head_adjusted[1] + self.radius * math.sin(angle - math.pi / 2.0)))
+            #end[0] = int(round(tail_adjusted[0] + self.radius * math.cos(angle - math.pi / 2.0)))
+            #end[1] = int(round(tail_adjusted[1] + self.radius * math.sin(angle - math.pi / 2.0)))
+            #pygame.draw.line(screen, self.stroke_color, start, end, 2)
+            #start[0] = int(round(head_adjusted[0] + self.radius * math.cos(angle + math.pi / 2.0)))
+            #start[1] = int(round(head_adjusted[1] + self.radius * math.sin(angle + math.pi / 2.0)))
+            #end[0] = int(round(tail_adjusted[0] + self.radius * math.cos(angle + math.pi / 2.0)))
+            #end[1] = int(round(tail_adjusted[1] + self.radius * math.sin(angle + math.pi / 2.0)))
+            #pygame.draw.line(screen, self.stroke_color, start, end, 2)
+            #pygame.draw.line(screen, self.stroke_color, head_adjusted, tail_adjusted, 2)
             
             
 class AmoebotUnit(Logger) :
@@ -160,17 +155,11 @@ class AmoebotUnit(Logger) :
     def set_stroke_color(self, color) :
         self.shape.set_stroke_color(color)
 
-    def get_fill_color(self) :
-        return self.shape.get_fill_color()
-
-    def set_fill_color(self, color) :
-        self.shape.set_fill_color(color)
-
-    def expand_to(self, p_move, q_move) :
-        p_move = int(p_move)
-        q_move = int(q_move)
+    def expand_to(self, move) :
+        p_move = int(move[0])
+        q_move = int(move[1])
         if not self.is_expanded() and abs(p_move) <= 1.1 and abs(q_move) < 1.1 :
-            if (p_move + q_move != 0) :
+            if (not (p_move == 0 and q_move == 0) or abs(p_move + q_move) < 1.5) :
                 pos = self.get_head_pos()
                 self.set_head_pos((pos[0] + p_move, pos[1] + q_move))
 
@@ -182,15 +171,52 @@ class AmoebotUnit(Logger) :
                 self.set_head_pos(self.get_tail_pos())
 
     
-class Space(Logger) :
+class AmoebotSpace(Logger) :
+    limit = 100
+    def __init__(self, units, rg = None) :
+        if rg is None :
+            rg = [2 * self.limit, 2 * self.limit]
+        self.cord = array([None for i in range(rg[0] * rg[1])])
+        self.cord = self.cord.reshape(rg)
+        self.units = {} 
+        for unit in units :
+            self.units[unit.name] = unit
+        self.step(delta = 0)
+        
     def add(self, body, shape) :
         pass
+        
     def step(self, delta) :
-        pass
+        for unit in self.units.values() :
+            head_pos = unit.get_head_pos()
+            p_index = int(head_pos[0] + self.limit)
+            q_index = int(head_pos[1] + self.limit)
+            if q_index >= 0 and q_index >= 0 :
+                self.cord[p_index, q_index] = unit
+            tail_pos = unit.get_tail_pos()
+            p_index = int(tail_pos[0] + self.limit)
+            q_index = int(tail_pos[1] + self.limit)
+            if q_index >= 0 and q_index >= 0 :
+                self.cord[p_index, q_index] = unit
+
+    def query(self, pos) :
+        result = None
+        p_index = int(pos[0] + self.limit)
+        q_index = int(pos[1] + self.limit)
+        if q_index >= 0 and q_index >= 0 :
+            unit = self.cord[p_index, q_index]
+            if unit is not None :
+                if int(unit.get_head_pos()[0]) == int(pos[0]) and int(unit.get_head_pos()[1]) == int(pos[1]) :
+                    result = (unit, "head") 
+                if int(unit.get_tail_pos()[0]) == int(pos[0]) and int(unit.get_tail_pos()[1]) == int(pos[1]) :
+                    result = (unit, "tail") 
+                else :
+                    self.cord[p_index, q_index] = None
+        return result
             
 class AmoebotContext(Context) :
     def __init__(self, delta, timer = None, units = None) :
-        super(AmoebotContext, self).__init__(delta = delta, space = Space(), timer = timer, units = units)
+        super(AmoebotContext, self).__init__(delta = delta, space = AmoebotSpace(units = units), timer = timer, units = units)
     
     def judge(self, intention) :
         self.intention = {}
@@ -206,16 +232,19 @@ class AmoebotContext(Context) :
                     self.units[obj_name].contract_to(contract)
                 expand = self.get_from_intention(obj_name = obj_name, symbol = "expand")
                 if expand is not None and type(expand).__name__ == "tuple" and len(expand) == 2 :
-                    self.units[obj_name].expand_to(expand)
+                    pos = self.units[obj_name].get_head_pos()
+                    coll = self.space.query((pos[0] + expand[0], pos[1] + expand[1]))
+                    if coll is None :
+                        self.units[obj_name].expand_to(expand)
+                    else :
+                        if coll[0].is_expanded() :
+                            coll[0].contract_to(coll[1])
+                            self.units[obj_name].expand_to(expand)
+                        
                 stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
                 if stroke is not None :
                     self.units[obj_name].set_stroke_color(stroke)
-                fill = self.get_from_intention(obj_name = obj_name, symbol = "fill")
-                if fill is not None :
-                    self.units[obj_name].set_fill_color(fill)
 
-        # physics engine step 
-        
         self.space.step(self.delta)
         self.timer.tick(self.delta)
         
@@ -238,30 +267,18 @@ class AmoebotContext(Context) :
                 listen_rcvs.append(obj_name) 
                 
             time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
-            mass_query = self.get_from_intention(obj_name = obj_name, symbol = "mass")
-            radius_query = self.get_from_intention(obj_name = obj_name, symbol = "radius")
-            pos_query = self.get_from_intention(obj_name = obj_name, symbol = "pos")
-            angle_query = self.get_from_intention(obj_name = obj_name, symbol = "angle")
-            vel_query = self.get_from_intention(obj_name = obj_name, symbol = "vel")
-            avel_query = self.get_from_intention(obj_name = obj_name, symbol = "avel")
+            head_pos_query = self.get_from_intention(obj_name = obj_name, symbol = "head_pos")
+            tail_pos_query = self.get_from_intention(obj_name = obj_name, symbol = "tail_pos")
 
             if time_query is not None :
                 self.feed_confirm(obj_name = obj_name, results = {"time" : self.timer.value})
             results = {}
-            if mass_query is not None : 
-                results["mass"] = self.units[obj_name].get_mass()
-            if radius_query is not None : 
-                results["radius"] = self.units[obj_name].get_radius()
-            if pos_query is not None : 
-                pos = self.units[obj_name].get_position()
-                results["pos"] = (pos[0], pos[1]) 
-            if angle_query is not None : 
-                results["angle"] = self.units[obj_name].get_angle() 
-            if vel_query is not None : 
-                vel = self.units[obj_name].get_velocity()
-                results["vel"] = (vel[0], vel[1]) 
-            if avel_query is not None : 
-                results["avel"] = self.units[obj_name].get_angular_velocity() 
+            if head_pos_query is not None : 
+                head_pos = self.units[obj_name].get_head_pos()
+                results["head_pos"] = (head_pos[0], head_pos[1]) 
+            if tail_pos_query is not None : 
+                tail_pos = self.units[obj_name].get_tail_pos()
+                results["tail_pos"] = (tail_pos[0], tail_pos[1]) 
             self.feed_confirm(obj_name = obj_name, results = results, check_unit = True)
         
         if len(listen_rcvs) > 0 :
@@ -282,16 +299,8 @@ class AmoebotContext(Context) :
             for obj_name in radar_rcvs :
                 self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
         
-        if len(obstacle_rcvs) > 0 : 
-            obstacles = []
-            for (name, unit) in self.units.items() :
-                if isinstance(unit.shape, SegmentShape) :
-                    ends = unit.shape.get_ends()
-                    obstacles.append((name, ends[0], ends[1], unit.get_velocity()))
-            for obj_name in obstacle_rcvs :
-                self.feed_confirm(obj_name = obj_name, results = {"obstacle" : obstacles})
-                
         return self.confirm
+        
     def snap(self, step_data) :
         if step_data is not None and check_attrs(step_data, self.step_data_attrs) :
             for (name, unit) in self.units.items() :
@@ -303,8 +312,6 @@ class AmoebotContext(Context) :
                 step_data[name]["tail_pos"] = "%f %f" % (tail_pos[0], tail_pos[1])
                 stroke = unit.get_stroke_color()  
                 step_data[name]["stroke"] = "%f %f %f" % (stroke[0], stroke[1], stroke[2])
-                fill = unit.get_fill_color()  
-                step_data[name]["fill"] = "%f %f %f" % (fill[0], fill[1], fill[2])
 
             step_data["_global_"] = {}
             step_data["_global_"]["timer"] = self.timer.value
@@ -332,10 +339,6 @@ class AmoebotContext(Context) :
                     if stroke is not None :
                         self.units[name].set_stroke_color((float(stroke.split(' ')[0]), float(stroke.split(' ')[1]), float(stroke.split(' ')[2])))
                         
-                    fill = unit_data.get("fill", None)
-                    if fill is not None :
-                        self.units[name].set_fill_color((float(fill.split(' ')[0]), float(fill.split(' ')[1]), float(fill.split(' ')[2])))
-
 
     def draw(self, screen) :
         (width, height) = screen.get_size()
@@ -415,10 +418,36 @@ class AmoebotAggregator(Aggregator) :
 
     object_status_focus = [
             "time", "transmit", "listen", 
-            "radius", "pos", "fill", "stroke", 
+            "radius", "pos", "stroke", 
             "radar", "obstacle",
             "expand", "contract",
     ]
+
+class ExpandModule(Module) :        
+    symbol = "expand"
+        
+    def perform(self, msg, ram) :
+        super(ExpandModule, self).perform(msg = msg, ram = ram)
+        sensor_symbols = []
+        if self.buffs is not None and len(self.buffs) > 0 :
+            self.output(value = self.buffs[0]) 
+            
+        self.activate_sensors(symbols = sensor_symbols)
+        
+        return self.result
+
+class ContractModule(Module) :  
+    symbol = "contract"
+        
+    def perform(self, msg, ram) :
+        super(ContractModule, self).perform(msg = msg, ram = ram)
+        sensor_symbols = []
+        if self.buffs is not None and len(self.buffs) > 0 :
+            self.output(value = self.buffs[0]) 
+            
+        self.activate_sensors(symbols = sensor_symbols)
+        
+        return self.result
 
 
 if __name__ == '__main__' :
