@@ -8,7 +8,7 @@ from numpy.linalg import norm
 
 from utils import distance_to_line
 
-from multiagent import Timer, Space, Aggregator, Context, Object, Module, Logger, check_attrs
+from multiagent import Timer, Space, Aggregator, Context, Object, Module, ProcessModule, SensorModule, Logger, check_attrs
 
 amoebot_paras = {
     "radius" : 10.0,
@@ -28,7 +28,7 @@ def wq_to_xy(a) :
     b = array([0.0, 0.0])
     p = a[0]
     q = a[1]
-    x = -2 * amoebot_paras["radius"] * p + -2 * amoebot_paras["radius"] *  math.cos(math.pi / 3.0) * q 
+    x = -2 * amoebot_paras["radius"] * p -2 * amoebot_paras["radius"] *  math.cos(math.pi / 3.0) * q 
     y = 2 * amoebot_paras["radius"] *  math.cos(math.pi / 6.0) * q
     b[0] = x
     b[1] = y
@@ -251,54 +251,48 @@ class AmoebotContext(Context) :
         # response to the sensors 
 
         self.confirm = {}
-        listen_rcvs = []
-        radar_rcvs = [] 
-        obstacle_rcvs = [] 
         
         for (obj_name, obj_intention) in self.intention.items() :
-            obstacle_query = self.get_from_intention(obj_name = obj_name, symbol = "obstacle")
-            if obstacle_query is not None :
-                obstacle_rcvs.append(obj_name)
-            radar_query = self.get_from_intention(obj_name = obj_name, symbol = "radar")
-            if radar_query is not None :
-                radar_rcvs.append(obj_name)
-            listen_query = self.get_from_intention(obj_name = obj_name, symbol = "listen")
-            if listen_query is not None :
-                listen_rcvs.append(obj_name) 
-                
+            
             time_query = self.get_from_intention(obj_name = obj_name, symbol = "time")
             head_pos_query = self.get_from_intention(obj_name = obj_name, symbol = "head_pos")
             tail_pos_query = self.get_from_intention(obj_name = obj_name, symbol = "tail_pos")
+            neighbor_query = self.get_from_intention(obj_name = obj_name, symbol = "neighbor")
 
             if time_query is not None :
                 self.feed_confirm(obj_name = obj_name, results = {"time" : self.timer.value})
             results = {}
+            head_pos = self.units[obj_name].get_head_pos()
+            tail_pos = self.units[obj_name].get_tail_pos()
             if head_pos_query is not None : 
-                head_pos = self.units[obj_name].get_head_pos()
                 results["head_pos"] = (head_pos[0], head_pos[1]) 
             if tail_pos_query is not None : 
-                tail_pos = self.units[obj_name].get_tail_pos()
                 results["tail_pos"] = (tail_pos[0], tail_pos[1]) 
+            if neighbor_query is not None :
+                results["neighbor"] = [] 
+                for shift in [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)] : 
+                    neighbor = self.space.query((head_pos[0] + shift[0], head_pos[1] + shift[1]))
+                    if neighbor is not None and neighbor[0].name != obj_name :
+                        results["neighbor"].append((neighbor, shift, "head")) 
+                    if self.units[obj_name].is_expanded() :
+                        neighbor = self.space.query((tail_pos[0] + shift[0], tail_pos[1] + shift[1]))
+                        if neighbor is not None and neighbor[0].name != obj_name :
+                            results["neighbor"].append((neighbor, shift, "tail")) 
             self.feed_confirm(obj_name = obj_name, results = results, check_unit = True)
         
-        if len(listen_rcvs) > 0 :
-            transmits = [] 
-            for (obj_name, obj_intention) in self.intention.items() :
-                transmit = self.get_from_intention(obj_name = obj_name, symbol = "transmit")
-                if transmit is not None :
-                    transmits.append(transmit) 
-            for obj_name in listen_rcvs :
-                self.feed_confirm(obj_name = obj_name, results = {"listen" : transmits})
+        transmits = {}
+        for (obj_name, obj_intention) in self.intention.items() :
+            transmit = self.get_from_intention(obj_name = obj_name, symbol = "share")
+            # print(obj_name, obj_intention, transmit)
+            if transmit is not None and transmit[0] != None :
+                if transmits.get(transmit[0].name, None) is None : 
+                    transmits[transmit[0].name] = []
+                transmits[transmit[0].name].append((transmit[1], self.units[obj_name])) 
+        # print("trans:", transmits)
+        for obj_name in transmits.keys() :
+            self.feed_confirm(obj_name = obj_name, results = {"shared" : transmits[obj_name]})
+        # print("confirm:", self.confirm)
 
-        if len(radar_rcvs) > 0 : 
-            detects = [] 
-            for (obj_name, obj_intention) in self.intention.items() :
-                unit = self.units.get(obj_name, None)
-                if unit is not None : 
-                    detects.append((obj_name, unit.get_position(), unit.get_velocity(), unit.get_radius(), unit.get_angle()))
-            for obj_name in radar_rcvs :
-                self.feed_confirm(obj_name = obj_name, results = {"radar" : detects})
-        
         return self.confirm
         
     def snap(self, step_data) :
@@ -417,10 +411,8 @@ class AmoebotContext(Context) :
 class AmoebotAggregator(Aggregator) :
 
     object_status_focus = [
-            "time", "transmit", "listen", 
-            "radius", "pos", "stroke", 
-            "radar", "obstacle",
-            "expand", "contract",
+            "time", "neighbor", "share", "shared", "head_pos", "tail_pos", 
+            "stroke", "expand", "contract",
     ]
 
 class ExpandModule(Module) :        
@@ -448,7 +440,21 @@ class ContractModule(Module) :
         self.activate_sensors(symbols = sensor_symbols)
         
         return self.result
+        
+class ShareModule(Module) :
+    symbol = "share"
+        
+    def perform(self, msg, ram) :
+        super(ShareModule, self).perform(msg = msg, ram = ram)
 
+        if self.buffs is not None and len(self.buffs) > 0 :
+            self.output(value = self.buffs[0]) 
+            
+        return self.result
+
+
+class NeighborModule(SensorModule) :   # simulate the listen interface 
+    symbol = "neighbor"
 
 if __name__ == '__main__' :
     print("")

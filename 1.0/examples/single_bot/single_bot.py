@@ -4,7 +4,7 @@ import sys, os, time, math, random
 sys.path.append("../../py")
 
 from multiagent import Driver, Simulator, Module, Data, Zipper, Player, test_func
-from amoebot import AmoebotObject, AmoebotUnit, AmoebotContext, AmoebotAggregator, ExpandModule, ContractModule
+from amoebot import *
 
 class BotProcessModule(Module) :
     delay = 10
@@ -21,19 +21,25 @@ class BotProcessModule(Module) :
                 self.inform_module(symbol = "expand", value = random.choice(self.choices))
             self.expanded = not self.expanded
             self.delay = 10
-        #self.activate_sensors(symbols = ["time", "listen"])
+        
+        neighbor_result = self.get_from_msg(msg = msg, symbol = "neighbor")
+        if neighbor_result is not None and len(neighbor_result) > 0 :
+            neighbor = neighbor_result[0][0][0]
+            self.inform_module(symbol = "share", value = (neighbor, "oops!")) 
+        
+        self.activate_sensors(symbols = ["time", "neighbor"])
         return self.result
 
 objects = []
-obj = AmoebotObject(name = "0", mods = [BotProcessModule(), ExpandModule(), ContractModule()])
+obj = AmoebotObject(name = "0", mods = [BotProcessModule(), ExpandModule(), ContractModule(), NeighborModule(), ShareModule()])
 objects.append(obj)
-obj1 = AmoebotObject(name = "1", mods = [])
+obj1 = AmoebotObject(name = "1", mods = [BotProcessModule()])
 objects.append(obj1)
-obj2 = AmoebotObject(name = "2", mods = [])
+obj2 = AmoebotObject(name = "2", mods = [BotProcessModule()])
 objects.append(obj2)
-obj3 = AmoebotObject(name = "3", mods = [])
+obj3 = AmoebotObject(name = "3", mods = [BotProcessModule()])
 objects.append(obj3)
-obj4 = AmoebotObject(name = "4", mods = [])
+obj4 = AmoebotObject(name = "4", mods = [BotProcessModule()])
 objects.append(obj4)
 
 units = []

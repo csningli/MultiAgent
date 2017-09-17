@@ -138,8 +138,6 @@ class Object(Logger) :
     def step(self) :
         self.info("%s steps." % self)
         
-        #self.info("%s '%s' pre-status: %s" % (obj.__class__.__name__, obj.name, obj.status['pre']))
-        
         for key in self.status['local'].keys() :
             self.status['pre'][key] = self.status['local'][key]
         self.status['local'] = {}
