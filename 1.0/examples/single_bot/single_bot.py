@@ -7,66 +7,56 @@ from multiagent import Driver, Simulator, Module, Data, Zipper, Player, test_fun
 from amoebot import *
 
 class BotProcessModule(Module) :
-    delay = 10
+    sleep = 10
     choices = [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)]
-    expanded = False
     def perform(self, msg, ram) :
         super(BotProcessModule, self).perform(msg = msg, ram = ram)
-        if self.delay > 0 :
-            self.delay -= 1
-        else :
-            if self.expanded :
-                self.inform_module(symbol = "contract", value = "head")
+        expanded = self.get_from_ram(ram = ram, symbol = ".expanded")
+        delay = self.get_from_ram(ram = ram, symbol = ".delay")
+        if None not in [expanded, delay] : 
+            neighbors = self.get_from_msg(msg = msg, symbol = "neighbor")
+            if neighbors is not None and len(neighbors) > 0 :
+                for neighbor in neighbors :
+                    neighbor_pos = neighbor[0][0]
+                    self.inform_module(symbol = "share", value = (neighbor_pos, "oops")) 
+            if delay > 0 :
+                delay -= 1
             else :
-                self.inform_module(symbol = "expand", value = random.choice(self.choices))
-            self.expanded = not self.expanded
-            self.delay = 10
-        
-        neighbor_result = self.get_from_msg(msg = msg, symbol = "neighbor")
-        if neighbor_result is not None and len(neighbor_result) > 0 :
-            neighbor = neighbor_result[0][0][0]
-            self.inform_module(symbol = "share", value = (neighbor, "oops!")) 
-        
-        self.activate_sensors(symbols = ["time", "neighbor"])
+                if expanded :
+                    self.inform_module(symbol = "contract", value = "head")
+                else :
+                    self.inform_module(symbol = "expand", value = random.choice(self.choices))
+                self.put_to_ram(ram = ram, symbol = ".expanded", value = not expanded)
+                delay = 10
+            self.put_to_ram(ram = ram, symbol = ".delay", value = delay)
+            self.activate_sensors(symbols = ["time", "neighbor", "head_pos", "tail_pos"])
         return self.result
 
+postions = [(2.0, 0.0), (-2.0, 0.0), (0.0, 2.0), (0.0, -2.0)]
 objects = []
-obj = AmoebotObject(name = "0", mods = [BotProcessModule(), ExpandModule(), ContractModule(), NeighborModule(), ShareModule()])
-objects.append(obj)
-obj1 = AmoebotObject(name = "1", mods = [BotProcessModule()])
-objects.append(obj1)
-obj2 = AmoebotObject(name = "2", mods = [BotProcessModule()])
-objects.append(obj2)
-obj3 = AmoebotObject(name = "3", mods = [BotProcessModule()])
-objects.append(obj3)
-obj4 = AmoebotObject(name = "4", mods = [BotProcessModule()])
-objects.append(obj4)
-
 units = []
-unit = AmoebotUnit(name = obj.name)
-unit.set_head_pos((0.0, 0.0))
-unit.set_tail_pos((0.0, 0.0))
-units.append(unit)
-
-unit1 = AmoebotUnit(name = obj1.name)
-unit1.set_head_pos((2.0, 0.0))
-unit1.set_tail_pos((2.0, 0.0))
-units.append(unit1)
-
-unit2 = AmoebotUnit(name = obj2.name)
-unit2.set_head_pos((-2.0, 0.0))
-unit2.set_tail_pos((-2.0, 0.0))
-units.append(unit2)
-
-unit3 = AmoebotUnit(name = obj3.name)
-unit3.set_head_pos((0.0, 2.0))
-unit3.set_tail_pos((0.0, 2.0))
-units.append(unit3)
-
-unit4 = AmoebotUnit(name = obj4.name)
-unit4.set_head_pos((0.0, -2.0))
-unit4.set_tail_pos((0.0, -2.0))
-units.append(unit4)
+for i in range(5) :
+    name = str(i)
+    mods = [BotProcessModule()]
+    if i < 1 :
+        mods += [ExpandModule(), ContractModule(), NeighborModule(), ShareModule()]
+    obj = AmoebotObject(name = name, mods = mods)
+    obj.put_to_mem(symbol = ".expanded", value = False)
+    obj.put_to_mem(symbol = ".delay", value = 0)
+    objects.append(obj)
+    unit = AmoebotUnit(name = name)
+    units.append(unit)
+        
+units[0].set_head_pos((0.0, 0.0))
+units[0].set_tail_pos((0.0, 0.0))
+units[1].set_head_pos((2.0, 0.0))
+units[1].set_tail_pos((2.0, 0.0))
+units[2].set_head_pos((-2.0, 0.0))
+units[2].set_tail_pos((-2.0, 0.0))
+units[3].set_head_pos((0.0, 2.0))
+units[3].set_tail_pos((0.0, 2.0))
+units[4].set_head_pos((0.0, -2.0))
+units[4].set_tail_pos((0.0, -2.0))
 
 context = AmoebotContext(delta = 1.0 / 50.0, units = units)
 
@@ -90,7 +80,6 @@ def play(filename) :
     zipper = Zipper(data = data, context = context, objects = objects)
     player = Player(zipper = zipper)
     player.play(steps = None, inspector = None, graphics = True)
-    
     
 if __name__ == '__main__' :
     usage = "Usage: python single_bot.py [simulate/play] [.data]"

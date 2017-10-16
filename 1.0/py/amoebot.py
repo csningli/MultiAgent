@@ -453,7 +453,7 @@ class ShareModule(Module) :
         return self.result
 
 
-class NeighborModule(SensorModule) :   # simulate the listen interface 
+class NeighborModule(SensorModule) :   
     symbol = "neighbor"
 
 if __name__ == '__main__' :
