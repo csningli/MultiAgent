@@ -1,5 +1,5 @@
 # MultiAgent
-A Python framework to simulate and test multiagent system for mobile objects.
+An open source framework for simulating the multiagent system with mobile objects.
 
 # Environment
 ## Download Multiagent
@@ -58,7 +58,7 @@ differ for every run. In my case, the resulting file is
 	
 	multiagent_20170904223121_682503.data
 
-## Play with Data
+## Replay with Data
 The simulation can be replayed, as long as the corresponding ".data" file is on your hand.
 	
 	(multiagent_1_0)[user @ patrol_car] python patrol_car.py play multiagent_20170904223121_682503.data
