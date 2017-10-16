@@ -32,7 +32,6 @@ class BotProcessModule(Module) :
             self.activate_sensors(symbols = ["time", "neighbor", "head_pos", "tail_pos"])
         return self.result
 
-postions = [(2.0, 0.0), (-2.0, 0.0), (0.0, 2.0), (0.0, -2.0)]
 objects = []
 units = []
 for i in range(5) :
