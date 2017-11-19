@@ -79,3 +79,6 @@ You can also remove the ".data" files inside an example from "examples/".
 - Simulator.
 - Player.
 
+## Version 1.1
+- Unit tests in Pytest.
+

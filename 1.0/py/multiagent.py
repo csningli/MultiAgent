@@ -339,9 +339,10 @@ class Unit(Logger) :
             'body' : None,
     }
 
-    def __init__(self, name, shape = None) :
+    def __init__(self, name, shape = None, delay = 0) :
         self.name = str(name)
         self.shape = None
+        self.delay = delay
         if shape is not None : 
             if check_attrs(shape, self.shape_attrs) :
                 self.shape = shape 
@@ -556,9 +557,11 @@ class Context(Logger) :
             for unit in units :
                 if check_attrs(unit, self.unit_attrs) :
                     self.units[unit.name] = unit
-                    self.space.add(unit.shape.body, unit.shape)
                     if unit.name.isdigit() and unit.name not in self.names :
                         self.names.append(int(unit.name))
+                    if (unit.delay < 1) {
+                        self.space.add(unit.shape.body, unit.shape)
+                    }
                 else :
                     self.error("Invalid 'unit'.")
         self.names.sort()
@@ -596,27 +599,34 @@ class Context(Logger) :
         
         for (obj_name, obj_intention) in self.intention.items() :
             if obj_name in self.units.keys() :
-                vel = self.get_from_intention(obj_name = obj_name, symbol = "set_vel")
-                if vel is not None and type(vel).__name__ == "tuple" and len(vel) == 2 :
-                    self.units[obj_name].set_velocity(vel)
-                angle = self.get_from_intention(obj_name = obj_name, symbol = "set_angle")
-                if angle is not None and type(angle).__name__ == "float" :
-                    self.units[obj_name].set_angle(angle)
-                force = self.get_from_intention(obj_name = obj_name, symbol = "force")
-                if force is not None :
-                    self.units[obj_name].apply_force(force)
-                avel = self.get_from_intention(obj_name = obj_name, symbol = "set_avel")
-                if avel is not None :
-                    self.units[obj_name].set_angular_velocity(avel)
-                stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
-                if stroke is not None :
-                    self.units[obj_name].set_stroke_color(stroke)
-                fill = self.get_from_intention(obj_name = obj_name, symbol = "fill")
-                if fill is not None :
-                    self.units[obj_name].set_fill_color(fill)
-                pointer = self.get_from_intention(obj_name = obj_name, symbol = "pointer")
-                if pointer is not None :
-                    self.units[obj_name].set_pointer_color(pointer)
+                unit = self.units[obj_name]
+                if unit.delay < 1 :
+                    vel = self.get_from_intention(obj_name = obj_name, symbol = "set_vel")
+                    if vel is not None and type(vel).__name__ == "tuple" and len(vel) == 2 :
+                        unit.set_velocity(vel)
+                    angle = self.get_from_intention(obj_name = obj_name, symbol = "set_angle")
+                    if angle is not None and type(angle).__name__ == "float" :
+                        unit.set_angle(angle)
+                    force = self.get_from_intention(obj_name = obj_name, symbol = "force")
+                    if force is not None :
+                        unit.apply_force(force)
+                    avel = self.get_from_intention(obj_name = obj_name, symbol = "set_avel")
+                    if avel is not None :
+                        unit.set_angular_velocity(avel)
+                    stroke = self.get_from_intention(obj_name = obj_name, symbol = "stroke")
+                    if stroke is not None :
+                        unit.set_stroke_color(stroke)
+                    fill = self.get_from_intention(obj_name = obj_name, symbol = "fill")
+                    if fill is not None :
+                        unit.set_fill_color(fill)
+                    pointer = self.get_from_intention(obj_name = obj_name, symbol = "pointer")
+                    if pointer is not None :
+                        unit.set_pointer_color(pointer)
+                else :
+                    unit.delay -= 1
+                    if (unit.delay < 1) {
+                        self.space.add(unit.shape.body, unit.shape)
+                    }
 
         # physics engine step 
         
