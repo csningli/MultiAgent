@@ -2,13 +2,59 @@
 from numpy import array, dot
 from numpy.linalg import norm
 
-def bias_to_line(point, p1, p2):
+def append_to_sys_path(path = None) :
+    if path is None :
+        unit_tests_path = os.path.dirname(os.path.abspath(__file__))
+        path = '/'.join(unit_tests_path.split('/')[:-1]) + '/py'
+    sys.path.append(path)
+
+
+def test_func(data = None, show = []) :
+    def real_test_func(func) : 
+        def func_wrapper(*args, **kwargs) :
+            print('| Run test: %s' % func.__name__)
+            start = time.time()
+            func(*args, **kwargs)
+            end = time.time()
+            for label in show :
+                if label in ['INFO', 'ERROR'] :
+                    print("Wait seconds for preparing the '%s' logs." % label)
+                    Logger().print_logs(label = label)
+            if data is not None : 
+                print("Wait seconds for storing the data into files.")
+                data.to_file()
+            print('| Done. Time cost: %s (s)' % (end - start))
+            print('-' * 60)
+        return func_wrapper
+    return real_test_func
+
+
+def check_attrs(obj, attrs) :
+    is_valid = True
+    if attrs is not None and hasattr(attrs, '__iter__') and hasattr(attrs, '__getitem__'):
+        for attr in attrs :
+            if not hasattr(obj, attr) :
+                is_valid = False
+                break
+            elif attrs[attr] is not None and type(getattr(obj, attr)).__name__ not in ['method', 'builtin_function_or_method'] :
+                is_valid = check_attrs(getattr(obj, attr), attrs[attr])
+                if is_valid == False :
+                    break
+    else :
+        is_valid = False
+    return is_valid                   
+
+
+def point_bias_to_line(point, p1, p2):
     bias = array((0.0, 0.0))
     direction = array(p2) - array(p1)
     direction = direction / norm(direction)
     bias = array(point) - array(p1) - direction * dot(array(point) - array(p1), direction)
     return bias
 
-def distance_to_line(point, p1, p2):
+
+def point_distance_to_line(point, p1, p2):
     bias = bias_to_line(point = point, p1 = p1, p2 = p2)
     return norm(array(bias))
+
+
