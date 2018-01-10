@@ -1,4 +1,7 @@
 
+# MultiAgent 1.1
+# (c) 2017-2018, NiL, csningli@gmail.com
+
 from numpy import array, dot
 from numpy.linalg import norm
 
@@ -28,8 +31,17 @@ def test_func(data = None, show = []) :
         return func_wrapper
     return real_test_func
 
-
 def check_attrs(obj, attrs) :
+    '''
+    Example of 'attrs': 
+    attrs = {
+        'a' : None,
+        'b' : {
+            b1 : None, 
+            b2 : None,
+        }
+    }
+    '''
     is_valid = True
     if attrs is not None and hasattr(attrs, '__iter__') and hasattr(attrs, '__getitem__'):
         for attr in attrs :
@@ -44,17 +56,7 @@ def check_attrs(obj, attrs) :
         is_valid = False
     return is_valid                   
 
-
-def point_bias_to_line(point, p1, p2):
-    bias = array((0.0, 0.0))
-    direction = array(p2) - array(p1)
-    direction = direction / norm(direction)
-    bias = array(point) - array(p1) - direction * dot(array(point) - array(p1), direction)
-    return bias
-
-
-def point_distance_to_line(point, p1, p2):
-    bias = bias_to_line(point = point, p1 = p1, p2 = p2)
-    return norm(array(bias))
+def check_length_equals_two(obj) :
+    return check_attrs(obj, {"__getitem__" : None, "__len__" : None}) and len(obj) == 2 
 
 
