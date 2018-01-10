@@ -1,4 +1,5 @@
 # Vim temporaries 
+*.swo
 *.swp
 *.out
 *.log
