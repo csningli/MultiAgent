@@ -494,16 +494,27 @@ class Timer(object) :
 
 class Schedule(object) :
     def __init__(self) : 
-        self.__delay = {} 
+        self.__agents = {} 
 
     def add_agent(self, agent, delay = 0) :
         if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
-            if int(delay) not in self.__delay.keys() :
-                self.__delay[int(delay)] = []
-            self.__delay[int(delay)].append(agent)
+            if int(delay) not in self.__agents.keys() :
+                self.__agents[int(delay)] = []
+            self.__agents[int(delay)].append(agent)
 
-    def get_agents(self, delay) : 
-        return copy.copy(self.__delay.get((int) delay, []))
+    def pop_agents(self) : 
+        agents = self.__agents.get(0, [])
+        
+        delays = list(self.__agents.keys())
+        delays.sort()
+        for delay in delays :
+            if delay < 1 : 
+                continue 
+            else :
+                self.__agents[delay - 1] = self.__agents[delay]
+                self.__agents[delay] = self.__agents.get(delay + 1, [])
+
+        return agents 
         
         
 class Driver(object) : 
@@ -534,13 +545,34 @@ class Driver(object) :
             exit(1)
 
         self.__data = Data()
+        self.__reqt = None
+        self.__resp = None
 
     @property
     def time(self) :
         return self.__timer.read()
 
     def go(self) :
-        pass
+        agents = self.__shedule.pop_agents()
+        for agent in agents :
+            if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
+                self.__agents[agent.name] = agent
+            
+        self.__resp = self.__context.handle_reqt(self.__reqt)
+        self.__reqt = Response()
+        for name, agent in self.agents.items()
+            reqt = Request()
+            msgs = self._resp.get_msgs(name)
+            for msg in msgs : 
+                msg.src = ""
+                reqt.add_msg(msg)
+            resp = agent.handle_reqt(reqt) 
+
+            msgs = resp.get_msgs("")
+            for msg in msgs : 
+                msg.src = name
+                self.__reqt.add_msg(msg)
+
 
     def back(self) :    
         pass
