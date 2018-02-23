@@ -15,10 +15,8 @@ import pymunkoptions
 pymunkoptions.options["debug"] = False
 from pymunk import Circle, Segment, Body, Space, Vec2d, moment_for_circle
 
-
 from utils import *
 from geometry import *
-
 
 class LookMixin(object) : 
     '''
@@ -59,9 +57,10 @@ class Object(Circle, LookMixin) :
         body = Body(mass = mass, moment = moment_for_circle(mass, 0, radius, (0,0)))
         super(Object, self).__init__(body, radius, (0, 0))
         self.__name = name
+        self.__label = self.__name 
 
-    def __str__(self) :
-        return "<multiagent.%s name=%s>" % (type(self).__name__, self.name)
+    def info(self) :
+        return "<<multiagent.%s name=%s>>" % (type(self).__name__, self.name)
 
     @property
     def name(self) :
@@ -70,6 +69,14 @@ class Object(Circle, LookMixin) :
     @name.setter
     def name(self, name) :
         self.__name = name
+
+    @property
+    def label(self) :
+        return self.__label
+
+    @label.setter 
+    def label(self, label) :
+        self.__label = label
     
     @property
     def pos(self) :
@@ -140,8 +147,8 @@ class Obstacle(Segment, LookMixin) :
         super(Obstacle, self).__init__(Body(body_type = Body.STATIC), a, b, radius)    
         self.__name = name
 
-    def __str__(self) :
-        return "<multiagent.%s name=%s>" % (type(self).__name__, self.name)
+    def info(self) :
+        return "<<multiagent.%s name=%s>>" % (type(self).__name__, self.name)
 
     @property
     def name(self) :
@@ -168,7 +175,7 @@ class Obstacle(Segment, LookMixin) :
 
 class OracleSpace(Space) : 
     
-    def __init__(self, objects = [], obstacles = []) : 
+    def __init__(self, objs = [], obts = []) : 
         super(OracleSpace, self).__init__()
         
         self.__objs = {}
@@ -179,6 +186,9 @@ class OracleSpace(Space) :
             
         for obt in obts : 
             self.add_obt(obt)
+
+    def info(self) :
+        return "<<multiagent.%s objs=%d obts=%d>>" % (type(self).__name__, len(self.__objs), len(self.__obts))
 
     def clear(self) :
         self.__objs = {}
@@ -192,7 +202,7 @@ class OracleSpace(Space) :
     def obts(self) :
         return copy(self.__obts)
 
-    def add_obj(obj) :
+    def add_obj(self, obj) :
         if check_attrs(obj, 
                 {   "body" : None,
                     "name" : None, 
@@ -207,18 +217,18 @@ class OracleSpace(Space) :
             self.add(obj.body, obj)
             self.__objs[obj.name] = obj
 
-    def add_obt(obt) :
+    def add_obt(self, obt) :
         if check_attrs(obt, {"body" : None, "ends" : None,}) :
-            self.add(obj.body, obj)
+            self.add(obt.body, obt)
             self.__obts[obt.name] = obt
 
-    def get_obj_by_name(name) : 
+    def get_obj_with(self, name) : 
         return self.__objs.get(str(name), None)
 
-    def get_obt_by_name(name) : 
+    def get_obt_with(self, name) : 
         return self.__obts.get(str(name), None)
 
-    def get_objs_by_range(c, l, dist = ppdist_l2) : 
+    def get_objs_at(self, c, l, dist = ppdist_l2) : 
         objs = {}
         if check_attrs(c, {"pos" : None, "radius" : None}) : 
             for (name, obj) in self.objs.items() : 
@@ -226,7 +236,7 @@ class OracleSpace(Space) :
                     objs[name] = obj
         return objs 
 
-    def get_obts_by_range(c, l, dist = pldist_l2) : 
+    def get_obts_at(self, c, l, dist = pldist_l2) : 
         obts = {}
         if check_attrs(c, {"pos" : None, "radius" : None}) : 
             for obt in self.obts : 
@@ -244,11 +254,14 @@ class Message(object) :
         self.__key = key
         self.__value = value 
 
+    def info(self) :
+        return "<<multiagent.%s src=%s dest=%s key=%s value=%s>>" % (type(self).__name__, self.__src, self.__dest, self.__key, self.__value)
+        
     @property
     def src(self) :
         return self.__src
 
-    @src.setter(self, src) :
+    @src.setter
     def src(self, src) :
         self.__src = str(src)
 
@@ -256,7 +269,7 @@ class Message(object) :
     def dest(self) :
         return self.__dest
 
-    @dest.setter(self, dest) :
+    @dest.setter 
     def dest(self, dest) :
         self.__dest = str(dest)
 
@@ -264,7 +277,7 @@ class Message(object) :
     def key(self) :
         return self.__key
 
-    @key.setter(self, key) :
+    @key.setter 
     def key(self, key) :
         self.__key = str(key)
 
@@ -272,7 +285,7 @@ class Message(object) :
     def value(self) :
         return self.__value
 
-    @value.setter(self, value) :
+    @value.setter 
     def value(self, value) :
         self.__value = str(value)
 
@@ -280,6 +293,9 @@ class Message(object) :
 class Request(object) :
     def __init__(self) :
         self.__content = {}
+
+    def info(self) :
+        return "<<multiagent.%s content_len=%d>>" % (type(self).__name__, len(self.__content.keys()))
 
     @property
     def content(self) :
@@ -307,10 +323,10 @@ class Context(object) :
                         "obts" : None, 
                         "add_obj" : None,
                         "add_obt" : None,
-                        "get_obj_by_name" : None,
-                        "get_obt_by_name" : None,
-                        "get_objs_by_range" : None,
-                        "get_obts_by_range" : None,
+                        "get_obj_with" : None,
+                        "get_obt_with" : None,
+                        "get_objs_at" : None,
+                        "get_obts_at" : None,
                     }) :
 
                 self.__oracle = oracle
@@ -328,6 +344,9 @@ class Context(object) :
 
         self.__reqt = None 
         self.__resp = None
+
+    def info(self) :
+        return "<<multiagent.%s oracle=%s>>" % (type(self).__name__, self.__oracle.info())
 
     def handle_reqt(reqt) :
         self.__reqt = reqt 
@@ -364,11 +383,15 @@ class Module(object) :
 class Agent(object) : 
     def __init__(self, name, mods = []) : 
         self.__name = name
+        self.__group_num = 0 
         self.__mods = []
         for mod in mods :
             self.add_mod(mod)
         self.__reqt = None
         self.__resp = None
+    
+    def info(self) :
+        return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
 
     @property
     def name(self) :
@@ -377,6 +400,14 @@ class Agent(object) :
     @name.setter
     def name(self, name) :
         self.__name = name
+
+    @property
+    def group_num(self) :
+        return self.__group_num
+
+    @group_num.setter
+    def group_num(self, num) :
+        self.__group_num = num
 
     def add_mod(self, mod) :
         if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
@@ -450,7 +481,6 @@ class Data(object) :
             return self.__data[index]
             
 
-
 class Inspector(object) : 
     pass
 
@@ -459,6 +489,9 @@ class Timer(object) :
     def __init__(self, delta = 0.01) :
         self.__read = 0.0
         self.__delta = delta
+
+    def info(self) :
+        return "<<multiagent.%s read=%.4f delta=%.4f>>" % (type(self).__name__, self.__read, self.__delta)
 
     @property
     def read(self) :
@@ -496,14 +529,19 @@ class Schedule(object) :
     def __init__(self) : 
         self.__agents = {} 
 
+    def info(self) :
+        return "<<multiagent.%s agents_num=%d>>" % (type(self).__name__, len(self.__agents))
+
     def add_agent(self, agent, delay = 0) :
-        if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
+        
+        if check_attrs(agent, {"handle_reqt" : None}) :
             if int(delay) not in self.__agents.keys() :
                 self.__agents[int(delay)] = []
             self.__agents[int(delay)].append(agent)
 
     def pop_agents(self) : 
         agents = self.__agents.get(0, [])
+        self.__agents[0] = []
         
         delays = list(self.__agents.keys())
         delays.sort()
@@ -518,41 +556,59 @@ class Schedule(object) :
         
         
 class Driver(object) : 
-    def __init__(self, context, schedule, delta = 0.01) : 
-        if check_attrs(context, ) :
+    def __init__(self, context, schedule, delta = 0.01, data = None) : 
+        if check_attrs(context, {"handle_reqt" : None}) :
             self.__context = context 
         else :
             print("Invalid context for the construction of driver. Exit.")
             exit(1)
 
-        if check_attrs(schedule, {"get_agents" : None}) :
+        if check_attrs(schedule, {"pop_agents" : None}) :
             self.__schedule = schedule
             self.__agents = {}
         else :
             print("Invalid schedule for the construction of driver. Exit.")
             exit(1)
 
-        if check_attrs(context, ) :
-            self.__context = context 
-        else :
-            print("Invalid context for the construction of driver. Exit.")
-            exit(1)
-            
         if type(delta).__name__ in ["float", "int"] :
             self.__timer = Timer(float(delta))
         else :
             print("Invalid delta for the construction of driver. Exit.")
             exit(1)
 
-        self.__data = Data()
+
+        self.__steps = 0
+        if data is not None :
+            if check_attrs(data, {"add_shot" : None, "get_shot" : None}) :
+                self.__data = data
+                self.__steps = data.get_steps()
+                self.restore() 
+            else :
+                print("Invalid data for the construction of driver. Exit.")
+                exit(1)
+        else : 
+            self.__data = Data()
+            
         self.__reqt = None
         self.__resp = None
+
+    @property
+    def steps(self) :
+        return self.__steps
+
+    @property
+    def time(self) :
+        return self.__timer.read
+        
+    def info(self) :
+        return "<<multiagent.%s context=%s schedule=%s timer=%s agents_num=%d>>" % (type(self).__name__, self.__context.info(), self.__schedule.info(), self.__timer.info(), len(self.__agents))
 
     @property
     def time(self) :
         return self.__timer.read()
 
     def go(self) :
+        result = True 
         agents = self.__shedule.pop_agents()
         for agent in agents :
             if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
@@ -560,7 +616,7 @@ class Driver(object) :
             
         self.__resp = self.__context.handle_reqt(self.__reqt)
         self.__reqt = Response()
-        for name, agent in self.agents.items()
+        for name, agent in self.agents.items() :
             reqt = Request()
             msgs = self._resp.get_msgs(name)
             for msg in msgs : 
@@ -573,15 +629,147 @@ class Driver(object) :
                 msg.src = name
                 self.__reqt.add_msg(msg)
 
+        return result
+
 
     def back(self) :    
+        result = True 
+        return result
+
+    def restore(self) :
         pass
 
 
 class Simulator(object) : 
-    pass
+    driver_attrs = {
+        "go" : None,
+        "back" : None,
+    }
+    
+    inspector_attrs = {
+    }
+    
+    def __init__(self, driver, inspector = None) :
+        self.__driver = None
+        if driver is not None and check_attrs(driver, self.driver_attrs) :
+            self.__driver = driver 
+        else :
+            print("Invalid driver. Exit")
+            exit(1)
+            
+        if inspector is None or check_attrs(inspector, self.inspector_attrs) :
+            self.__inspector = inspector 
+        else :
+            
+            print("Invalid inspector. Exit")
+            exit(1)
+
+    def info(self) :
+        return "<<multiagent.%s driver=%s>>" % (type(self).__name__, self.__driver.info())
+
+        
+    def simulate(self, inspector = None, graphics = False, width = 800, height = 800, limit = None) :
+        if self.__driver is None :
+            print("No valid driver given. Return.")
+            return False 
+
+        if inspector is None : 
+            inspector = self.__inspector
+        
+        pygame.init()
+        screen = None
+        if graphics :
+             screen = pygame.display.set_mode((width, height))
+        
+        clock = pygame.time.Clock()
+        
+        font = pygame.font.Font(None, 16)
+        help_info = [
+                "ESC: quit; Space: pause/run; Key '->': next step;",
+        ]
+        
+        gap = 1         # number of rounds in one step
+        phases = None     # number of steps to run; None for ever 
+
+        running = True
+        pause = True 
+        
+        while (limit is None or self.__driver.steps < limit) and running :
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    running = False
+                elif event.type == KEYDOWN :
+                    if event.key == K_ESCAPE:
+                        running = False
+                    if event.key == K_SPACE:
+                        pause = not pause
+                        if pause == False :
+                            if limit is None :
+                                phases = None
+                            else :
+                                phases = int(math.ceil((limit - self.__driver.steps) / float(gap)))
+
+            keys = pygame.key.get_pressed() 
+            
+            if delay > 0 : 
+               delay -= 1
+            elif keys[K_RIGHT] :
+                if pasuse == True :
+                    phases = 1
+                delay = 10000
+            elif keys[K_LEFT] :
+                if pasuse == True :
+                    phases = -1
+                delay = 10000
+
+            clock.tick(50)
+            
+            if (phases is None or phases != 0) and (pause == False) : 
+               
+                if plan is None or plan > 0 : 
+                    for i in range(gap) :
+                        if self.__driver.go() :
+                            steps += 1 
+
+                    if plan is not None and plan > 0 :
+                        plan -= 1
+                
+                    #if inspector is not None and not inspector.check(driver = self.__driver) : 
+                        #pause = True
+                        
+                elif plan < 0 :
+                    for i in range(gap) :
+                        self.__driver.back() 
+                        
+                    if phases is not None and phases > 0 :
+                        phases -= 1
+
+                if screen is not None :
+                        screen.fill(THECOLORS["white"])
+                        
+                        self.__driver.context.draw(screen)
+                        pygame.display.flip()
+
+                        sim_info = [ 
+                            "{:<10}".format("Steps:") + "%d" % self.__driver.steps, 
+                            "{:<10}".format("Time:") + "%2.6f" % self.__driver.time, 
+                        ]
+                        
+                        y = 5
+                        for line in sim_info:
+                            screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
+                            y += 10
+
+                        y = height - 20
+                        for line in help_info:
+                            screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
+                            y -= 10
+                            
+                        pygame.display.set_caption("MultiAgent Simulator v1.0 (c) 2017-2018, NiL, csningli@gmail.com")
+                        pygame.display.flip()
 
 
 if __name__ == '__main__' :
     print("")
     print("MultiAgent Simulator v1.1 (c) 2017-2018, NiL, csningli@gmail.com.")
+    

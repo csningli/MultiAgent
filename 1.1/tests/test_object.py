@@ -14,7 +14,7 @@ from multiagent import *
 def test_obj() :
     '''
     >>> test_obj()
-    Object: <multiagent.Object name=test_obj>
+    Object: <<multiagent.Object name=test_obj>>
     Mass : 10.0
     Radius : 10.0
     Position : (1.0, 0.0)
@@ -31,7 +31,7 @@ def test_obj() :
     obj.vel = (1.0, 0.0)
     obj.avel = 2.0
     obj.force = (0.0, 5.0)
-    print("Object: %s" % obj)
+    print("Object: %s" % obj.info())
     print("Mass : %.1f" % obj.mass)
     print("Radius : %.1f" % obj.radius)
     print("Position : (%.1f, %.1f)" % (obj.pos[0], obj.pos[1]))
@@ -45,14 +45,14 @@ def test_obj() :
 def test_obt() :
     '''
     >>> test_obt()
-    Obstacle: <multiagent.Obstacle name=test_obt>
+    Obstacle: <<multiagent.Obstacle name=test_obt>>
     A: (0.0, 1.0)
     B: (1.0, 0.0)
     Radius: 2.0
     Ends: (0.0, 1.0), (1.0, 0.0)
     '''
     obs = Obstacle(name ="test_obt", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)
-    print("Obstacle: %s" % obs)
+    print("Obstacle: %s" % obs.info())
     print("A: (%.1f, %.1f)" % (obs.a[0], obs.a[1]))
     print("B: (%.1f, %.1f)" % (obs.b[0], obs.b[1]))
     print("Radius: %.1f" % obs.radius)

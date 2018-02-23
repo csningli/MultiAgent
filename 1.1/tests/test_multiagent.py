@@ -5,8 +5,9 @@
 
 import sys, os, time, subprocess
 
-tests = ["test_module.py", "test_object.py", "test_unit.py", "test_context.py",
-        "test_driver.py", "test_zipper.py"]
+tests = ["test_object.py", "test_agent.py", "test_message.py", "test_request.py",  
+        "test_oracle.py", "test_timer.py", "test_context.py",  "test_schedule.py",
+        "test_driver.py", "test_simulator.py"]
 
 if __name__ == '__main__' :
     for test in tests :
