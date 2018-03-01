@@ -51,12 +51,12 @@ def test_obt() :
     Radius: 2.0
     Ends: (0.0, 1.0), (1.0, 0.0)
     '''
-    obs = Obstacle(name ="test_obt", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)
-    print("Obstacle: %s" % obs.info())
-    print("A: (%.1f, %.1f)" % (obs.a[0], obs.a[1]))
-    print("B: (%.1f, %.1f)" % (obs.b[0], obs.b[1]))
-    print("Radius: %.1f" % obs.radius)
-    print("Ends: (%.1f, %.1f), (%.1f, %.1f)" % (obs.ends[0][0], obs.ends[0][1], obs.ends[1][0], obs.ends[1][1]))
+    obt = Obstacle(name ="test_obt", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)
+    print("Obstacle: %s" % obt.info())
+    print("A: (%.1f, %.1f)" % (obt.a[0], obt.a[1]))
+    print("B: (%.1f, %.1f)" % (obt.b[0], obt.b[1]))
+    print("Radius: %.1f" % obt.radius)
+    print("Ends: (%.1f, %.1f), (%.1f, %.1f)" % (obt.ends[0][0], obt.ends[0][1], obt.ends[1][0], obt.ends[1][1]))
 
 
 if __name__ == '__main__' :

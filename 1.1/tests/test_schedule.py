@@ -13,7 +13,7 @@ from multiagent import *
 def test_schedule_init() :
     '''
     >>> test_schedule_init()
-    Schedule: <<multiagent.Schedule agents_num=0>>
+    Schedule: <<multiagent.Schedule queue_len=0>>
     '''
     schedule = Schedule()
     print("Schedule: %s" % schedule.info())
@@ -21,11 +21,11 @@ def test_schedule_init() :
 def test_schedule_add_pop() :
     '''
     >>> test_schedule_add_pop()
-    Schedule: <<multiagent.Schedule agents_num=0>>
+    Schedule: <<multiagent.Schedule queue_len=0>>
     Add Agent: <<multiagent.Agent name=agent1 mods_num=0>>
-    Schedule: <<multiagent.Schedule agents_num=1>>
+    Schedule: <<multiagent.Schedule queue_len=1>>
     Add Agent: <<multiagent.Agent name=agent2 mods_num=0>>
-    Schedule: <<multiagent.Schedule agents_num=2>>
+    Schedule: <<multiagent.Schedule queue_len=2>>
     Pop Agent: ['<<multiagent.Agent name=agent1 mods_num=0>>']
     Pop Agent: []
     Pop Agent: ['<<multiagent.Agent name=agent2 mods_num=0>>']
@@ -40,11 +40,11 @@ def test_schedule_add_pop() :
     print("Add Agent: %s" % agent.info())
     schedule.add_agent(agent, delay = 2)
     print("Schedule: %s" % schedule.info())
-    agents = schedule.pop_agents()
+    agents = schedule.queue_pop()["agents"]
     print("Pop Agent: %s" % [agent.info() for agent in agents])
-    agents = schedule.pop_agents()
+    agents = schedule.queue_pop()["agents"]
     print("Pop Agent: %s" % [agent.info() for agent in agents])
-    agents = schedule.pop_agents()
+    agents = schedule.queue_pop()["agents"]
     print("Pop Agent: %s" % [agent.info() for agent in agents])
 
 

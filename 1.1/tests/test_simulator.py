@@ -13,7 +13,7 @@ from multiagent import *
 def test_sim_init() :
     '''
     >>> test_sim_init()
-    Simulator: <<multiagent.Simulator driver=<<multiagent.Driver context=<<multiagent.Context oracle=<<multiagent.OracleSpace objs=0 obts=0>>>> schedule=<<multiagent.Schedule agents_num=0>> timer=<<multiagent.Timer read=0.0000 delta=0.0100>> agents_num=0>>>>
+    Simulator: <<multiagent.Simulator has_driver=1>>
     '''
     driver = Driver(context = Context(), schedule = Schedule())
     sim = Simulator(driver = driver)
@@ -22,11 +22,12 @@ def test_sim_init() :
 def test_sim_sim() :
     '''
     >>> test_sim_sim()
+    Simulate
     '''
     driver = Driver(context = Context(), schedule = Schedule())
     sim = Simulator(driver = driver)
     print("Simulate")
-    sim.simulate()
+    sim.simulate(limit = 1)
 
 
 

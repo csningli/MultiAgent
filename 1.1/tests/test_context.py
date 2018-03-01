@@ -13,10 +13,29 @@ from multiagent import *
 def test_context_init() :
     '''
     >>> test_context_init()
-    Context: <<multiagent.Context oracle=<<multiagent.OracleSpace objs=0 obts=0>>>>
+    Context: <<multiagent.Context has_oracle=1>>
+    Add object: <<multiagent.Object name=0>>
+    Oracle: <<multiagent.OracleSpace objs_num=1 obts_num=0>>
+    Add object: <<multiagent.Object name=1>>
+    Oracle: <<multiagent.OracleSpace objs_num=2 obts_num=0>>
+    Add obstacle: <<multiagent.Obstacle name=0>>
+    Oracle: <<multiagent.OracleSpace objs_num=2 obts_num=1>>
     '''
-    context = Context()
+    oracle = OracleSpace()
+    context = Context(oracle = oracle)
     print("Context: %s" % context.info())
+    obj = Object(name = "0")
+    print("Add object: %s" % obj.info())
+    context.add_obj(obj)
+    print("Oracle: %s" % oracle.info())
+    obj = Object(name = "1")
+    print("Add object: %s" % obj.info())
+    context.add_obj(obj)
+    print("Oracle: %s" % oracle.info())
+    obt = Obstacle(name ="0", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)
+    print("Add obstacle: %s" % obt.info())
+    context.add_obt(obt)
+    print("Oracle: %s" % oracle.info())
 
 
 if __name__ == '__main__' :

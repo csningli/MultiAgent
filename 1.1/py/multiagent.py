@@ -108,7 +108,7 @@ class Object(Circle, LookMixin) :
         
     @vel.setter
     def vel(self, vel) :
-        self.body.velocity = vel
+       self.body.velocity = vel
 
     @property
     def avel(self) :
@@ -188,7 +188,7 @@ class OracleSpace(Space) :
             self.add_obt(obt)
 
     def info(self) :
-        return "<<multiagent.%s objs=%d obts=%d>>" % (type(self).__name__, len(self.__objs), len(self.__obts))
+        return "<<multiagent.%s objs_num=%d obts_num=%d>>" % (type(self).__name__, len(self.__objs), len(self.__obts))
 
     def clear(self) :
         self.__objs = {}
@@ -196,11 +196,11 @@ class OracleSpace(Space) :
 
     @property
     def objs(self) :
-        return copy(self.__objs)
+        return copy.copy(self.__objs)
 
     @property
     def obts(self) :
-        return copy(self.__obts)
+        return copy.copy(self.__obts)
 
     def add_obj(self, obj) :
         if check_attrs(obj, 
@@ -213,7 +213,7 @@ class OracleSpace(Space) :
                     "avel" : None, 
                     "force" : None,
                 }) :
-
+            
             self.add(obj.body, obj)
             self.__objs[obj.name] = obj
 
@@ -245,6 +245,12 @@ class OracleSpace(Space) :
                     obts.append(obt)
         return obts
 
+    def draw(self, screen) :
+        for obj in self.objs.values() + self.obts.values() :
+            obj.draw(screen)
+
+    def step(self) :
+        pass
 
 
 class Message(object) :
@@ -337,22 +343,31 @@ class Context(object) :
             self.__oracle = OracleSpace()
             
         for obj in objs : 
-            self.__oracle.add_obj(obj)
+            self.add_obj(obj)
             
         for obt in obts : 
-            self.__oracle.add_obt(obt)
+            self.add_obj(obj)
 
         self.__reqt = None 
         self.__resp = None
 
     def info(self) :
-        return "<<multiagent.%s oracle=%s>>" % (type(self).__name__, self.__oracle.info())
+        return "<<multiagent.%s has_oracle=%d>>" % (type(self).__name__, self.__oracle is not None)
 
     def handle_reqt(reqt) :
         self.__reqt = reqt 
         self.__resp = Response() 
-        
         return self.__resp
+
+    def draw(self, screen) :
+        self.__oracle.draw(screen)
+
+    def add_obj(self, obj) : 
+        return self.__oracle.add_obj(obj)
+
+    def add_obt(self, obt) : 
+        return self.__oracle.add_obt(obt)
+        
 
 
 class Buffer(object) :
@@ -395,7 +410,7 @@ class Agent(object) :
 
     @property
     def name(self) :
-        return name
+        return self.__name
 
     @name.setter
     def name(self, name) :
@@ -527,32 +542,48 @@ class Timer(object) :
 
 class Schedule(object) :
     def __init__(self) : 
-        self.__agents = {} 
+        self.__queue = {} 
 
     def info(self) :
-        return "<<multiagent.%s agents_num=%d>>" % (type(self).__name__, len(self.__agents))
+        return "<<multiagent.%s queue_len=%d>>" % (type(self).__name__, len(self.__queue))
+    
+    def add_obj(self, obj, delay = 0) :
+        self.queue_append(item = obj, category = "objects", delay = delay)
+
+    def add_obt(self, obt, delay = 0) :
+        self.queue_append(item = obt, category = "obstacles", delay = delay)
 
     def add_agent(self, agent, delay = 0) :
-        
-        if check_attrs(agent, {"handle_reqt" : None}) :
-            if int(delay) not in self.__agents.keys() :
-                self.__agents[int(delay)] = []
-            self.__agents[int(delay)].append(agent)
+        self.queue_append(item = agent, category = "agents", delay = delay)
 
-    def pop_agents(self) : 
-        agents = self.__agents.get(0, [])
-        self.__agents[0] = []
+    def queue_append(self, item, category, delay = 0) :
+        if int(delay) not in self.__queue.keys() :
+            self.__queue[int(delay)] = {
+                "objects" : [],
+                "obstacles" : [],
+                "agents" : [],
+            }
+        if category in ["objects", "obstacles", "agents"] :
+            self.__queue[int(delay)][category].append(item)
+
+    def queue_pop(self) : 
+        item = self.__queue.get(0, {"objects" : [], "obstacles" : [], "agents" : [],})
+        self.__queue[0] = {
+            "objects" : [],
+            "obstacles" : [],
+            "agents" : [],
+        }
         
-        delays = list(self.__agents.keys())
+        delays = list(self.__queue.keys())
         delays.sort()
         for delay in delays :
             if delay < 1 : 
                 continue 
             else :
-                self.__agents[delay - 1] = self.__agents[delay]
-                self.__agents[delay] = self.__agents.get(delay + 1, [])
+                self.__queue[delay - 1] = self.__queue[delay]
+                self.__queue[delay] = self.__queue.get(delay + 1, {"objects" : [], "obstacles" : [], "agents" : [],})
 
-        return agents 
+        return item
         
         
 class Driver(object) : 
@@ -563,7 +594,7 @@ class Driver(object) :
             print("Invalid context for the construction of driver. Exit.")
             exit(1)
 
-        if check_attrs(schedule, {"pop_agents" : None}) :
+        if check_attrs(schedule, {"queue_pop" : None}) :
             self.__schedule = schedule
             self.__agents = {}
         else :
@@ -601,39 +632,41 @@ class Driver(object) :
         return self.__timer.read
         
     def info(self) :
-        return "<<multiagent.%s context=%s schedule=%s timer=%s agents_num=%d>>" % (type(self).__name__, self.__context.info(), self.__schedule.info(), self.__timer.info(), len(self.__agents))
+        return "<<multiagent.%s has_context=%d has_schedule=%d has_timer=%d agents_num=%d>>" % (type(self).__name__, self.__context is not None, self.__schedule is not None, self.__timer is not None, len(self.__agents))
 
-    @property
-    def time(self) :
-        return self.__timer.read()
+    def draw(self, screen) :
+        self.__context.draw(screen)
 
     def go(self) :
         result = True 
-        agents = self.__shedule.pop_agents()
-        for agent in agents :
-            if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
-                self.__agents[agent.name] = agent
+        self.__steps += 1
+        #agents = self.__shedule.pop_agents()
+        #for agent in agents :
+            #if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
+                #self.__agents[agent.name] = agent
             
-        self.__resp = self.__context.handle_reqt(self.__reqt)
-        self.__reqt = Response()
-        for name, agent in self.agents.items() :
-            reqt = Request()
-            msgs = self._resp.get_msgs(name)
-            for msg in msgs : 
-                msg.src = ""
-                reqt.add_msg(msg)
-            resp = agent.handle_reqt(reqt) 
+        #self.__resp = self.__context.handle_reqt(self.__reqt)
+        #self.__reqt = Response()
+        #for name, agent in self.agents.items() :
+            #reqt = Request()
+            #msgs = self._resp.get_msgs(name)
+            #for msg in msgs : 
+                #msg.src = ""
+                #reqt.add_msg(msg)
+            #resp = agent.handle_reqt(reqt) 
 
-            msgs = resp.get_msgs("")
-            for msg in msgs : 
-                msg.src = name
-                self.__reqt.add_msg(msg)
+            #msgs = resp.get_msgs("")
+            #for msg in msgs : 
+                #msg.src = name
+        #        self.__reqt.add_msg(msg)
 
         return result
 
 
     def back(self) :    
         result = True 
+        if self.__steps > 0 :
+            self.__steps -= 1
         return result
 
     def restore(self) :
@@ -665,7 +698,7 @@ class Simulator(object) :
             exit(1)
 
     def info(self) :
-        return "<<multiagent.%s driver=%s>>" % (type(self).__name__, self.__driver.info())
+        return "<<multiagent.%s has_driver=%d>>" % (type(self).__name__, self.__driver is not None)
 
         
     def simulate(self, inspector = None, graphics = False, width = 800, height = 800, limit = None) :
@@ -678,23 +711,28 @@ class Simulator(object) :
         
         pygame.init()
         screen = None
-        if graphics :
+        if graphics == True :
              screen = pygame.display.set_mode((width, height))
         
         clock = pygame.time.Clock()
         
         font = pygame.font.Font(None, 16)
         help_info = [
-                "ESC: quit; Space: pause/run; Key '->': next step;",
+                "ESC: quit; Space: pause/run;",
+                "Key 'left': prev step; Key 'right': next step;",
+                "Key 'up': speed up; Key 'down': speed down;",
         ]
         
-        gap = 1         # number of rounds in one step
+        delay = 0       # delay between handling key presses
+        speed = 1         # number of rounds in one step
         phases = None     # number of steps to run; None for ever 
 
         running = True
-        pause = True 
+        pause = False 
         
         while (limit is None or self.__driver.steps < limit) and running :
+            updated = False
+
             for event in pygame.event.get():
                 if event.type == QUIT:
                     running = False
@@ -707,66 +745,77 @@ class Simulator(object) :
                             if limit is None :
                                 phases = None
                             else :
-                                phases = int(math.ceil((limit - self.__driver.steps) / float(gap)))
+                                phases = int(math.ceil((limit - self.__driver.steps) / float(speed)))
 
             keys = pygame.key.get_pressed() 
             
             if delay > 0 : 
                delay -= 1
+            elif keys[K_UP] :
+                speed = min(100, speed + 1)
+                delay = 10
+                updated = True
+            elif keys[K_DOWN] :
+                speed = max(1, speed - 1)
+                delay = 10
+                updated = True
             elif keys[K_RIGHT] :
-                if pasuse == True :
+                if pause == True :
                     phases = 1
-                delay = 10000
+                    pause = False
+                delay = 10
             elif keys[K_LEFT] :
-                if pasuse == True :
+                if pause == True :
                     phases = -1
-                delay = 10000
+                    pause = False
+                delay = 10
 
             clock.tick(50)
             
             if (phases is None or phases != 0) and (pause == False) : 
                
-                if plan is None or plan > 0 : 
-                    for i in range(gap) :
-                        if self.__driver.go() :
-                            steps += 1 
-
-                    if plan is not None and plan > 0 :
-                        plan -= 1
-                
-                    #if inspector is not None and not inspector.check(driver = self.__driver) : 
-                        #pause = True
-                        
-                elif plan < 0 :
-                    for i in range(gap) :
-                        self.__driver.back() 
-                        
+                if phases is None or phases > 0 : 
+                    for i in range(speed) :
+                        self.__driver.go()
                     if phases is not None and phases > 0 :
                         phases -= 1
+                    #if inspector is not None and not inspector.check(driver = self.__driver) : 
+                        #pause = True
+                elif phases < 0 :
+                    for i in range(speed) :
+                        self.__driver.back() 
+                    phases += 1
 
-                if screen is not None :
-                        screen.fill(THECOLORS["white"])
-                        
-                        self.__driver.context.draw(screen)
-                        pygame.display.flip()
+                if phases == 0 :
+                    pause = True
 
-                        sim_info = [ 
-                            "{:<10}".format("Steps:") + "%d" % self.__driver.steps, 
-                            "{:<10}".format("Time:") + "%2.6f" % self.__driver.time, 
-                        ]
-                        
-                        y = 5
-                        for line in sim_info:
-                            screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
-                            y += 10
+                updated = True
 
-                        y = height - 20
-                        for line in help_info:
-                            screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
-                            y -= 10
-                            
-                        pygame.display.set_caption("MultiAgent Simulator v1.0 (c) 2017-2018, NiL, csningli@gmail.com")
-                        pygame.display.flip()
+            if updated == True and screen is not None :
+            
+                screen.fill(THECOLORS["white"])
+                
+                self.__driver.draw(screen)
+                pygame.display.flip()
+
+                sim_info = [ 
+                    "{:<10}".format("Speed:") + "%d" % speed, 
+                    "{:<10}".format("Steps:") + "%d" % self.__driver.steps, 
+                    "{:<10}".format("Time:") + "%2.6f" % self.__driver.time, 
+                ]
+                
+                y = 5
+                for line in sim_info:
+                    screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
+                    y += 10
+
+                y = height - 20
+                for line in help_info:
+                    screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
+                    y -= 10
+                    
+                pygame.display.set_caption("MultiAgent Simulator v1.1 (c) 2017-2018, NiL, csningli@gmail.com")
+                pygame.display.flip()
 
 
 if __name__ == '__main__' :

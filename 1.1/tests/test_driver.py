@@ -13,7 +13,7 @@ from multiagent import *
 def test_driver() :
     '''
     >>> test_driver()
-    Driver: <<multiagent.Driver context=<<multiagent.Context oracle=<<multiagent.OracleSpace objs=0 obts=0>>>> schedule=<<multiagent.Schedule agents_num=0>> timer=<<multiagent.Timer read=0.0000 delta=0.0100>> agents_num=0>>
+    Driver: <<multiagent.Driver has_context=1 has_schedule=1 has_timer=1 agents_num=0>>
     '''
     context = Context()
     schedule = Schedule()

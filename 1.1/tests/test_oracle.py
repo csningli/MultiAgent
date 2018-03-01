@@ -13,7 +13,7 @@ from multiagent import *
 def test_oracle_init() :
     '''
     >>> test_oracle_init()
-    Oracle: <<multiagent.OracleSpace objs=0 obts=0>>
+    Oracle: <<multiagent.OracleSpace objs_num=0 obts_num=0>>
     '''
     oracle = OracleSpace()
     print("Oracle: %s" % oracle.info())
@@ -21,13 +21,13 @@ def test_oracle_init() :
 def test_oracle_add() :
     '''
     >>> test_oracle_add()
-    Oracle: <<multiagent.OracleSpace objs=1 obts=1>>
+    Oracle: <<multiagent.OracleSpace objs_num=1 obts_num=1>>
     Add Object: <<multiagent.Object name=obj2>>
-    Oracle: <<multiagent.OracleSpace objs=2 obts=1>>
+    Oracle: <<multiagent.OracleSpace objs_num=2 obts_num=1>>
     Add Obstacle: <<multiagent.Obstacle name=obt2>>
-    Oracle: <<multiagent.OracleSpace objs=2 obts=2>>
+    Oracle: <<multiagent.OracleSpace objs_num=2 obts_num=2>>
     Oracle Clear
-    Oracle: <<multiagent.OracleSpace objs=0 obts=0>>
+    Oracle: <<multiagent.OracleSpace objs_num=0 obts_num=0>>
     '''
     oracle = OracleSpace(
             objs = [Object(name = "obj1"),], 
@@ -48,7 +48,7 @@ def test_oracle_add() :
 def test_oracle_get() :
     '''
     >>> test_oracle_get()
-    Oracle: <<multiagent.OracleSpace objs=0 obts=0>>
+    Oracle: <<multiagent.OracleSpace objs_num=0 obts_num=0>>
     '''
     oracle = OracleSpace()
     print("Oracle: %s" % oracle.info())
