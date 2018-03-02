@@ -23,6 +23,7 @@ class LookMixin(object) :
     This class has the 'look', and hence its instances can be drawn on the screen.
     '''
 
+    __visible = True
     __stroke_color = THECOLORS["black"]
     __pointer_color = THECOLORS["black"]
     __fill_color = THECOLORS["black"]
@@ -51,6 +52,14 @@ class LookMixin(object) :
     def fill_color(self, color) :
         self.__fill_color = color
     
+    @property
+    def visible(self) :
+        return self.__visible 
+
+    @visible.setter
+    def visible(self, value) :
+        self.__visible = value
+        
 
 class Object(Circle, LookMixin) :
     def __init__(self, name, mass = 1.0, radius = 10.0) :
@@ -127,23 +136,25 @@ class Object(Circle, LookMixin) :
         self.body.force = force
 
     def draw(self, screen) :
-        p = self.pos
-        rot = self.rot
-        (width, height) = screen.get_size()
+        if self.visible == True :
+            p = Vec2d(self.pos)
+            rot = Vec2d(self.rot)
+            r = self.radius
+            (width, height) = screen.get_size()
 
-        # adjust the drawing coordinates to make sure (0, 0) stays in the center
-        
-        p[0] = int(width / 2.0 + p[0]) 
-        p[1] = int(height / 2.0 - p[1]) 
-
-        head = Vec2d(rot.x, -rot.y) * self.radius * 0.9
-        pygame.draw.circle(screen, self.stroke_color, p, int(r), 2)
-        pygame.draw.circle(screen, self.fill_color, p, int(r/2.0), 4)
-        pygame.draw.line(screen, self.pointer_color, p, p + head)
+            # adjust the drawing coordinates to make sure (0, 0) stays in the center
+            
+            p.x = int(width / 2.0 + p.x)
+            p.y = int(height / 2.0 - p.y) 
+            
+            head = Vec2d(rot.x, -rot.y) * self.radius * 0.9
+            pygame.draw.circle(screen, self.stroke_color, p, int(r), 2)
+            pygame.draw.circle(screen, self.fill_color, p, int(r/2.0), 4)
+            pygame.draw.line(screen, self.pointer_color, p, p + head)
     
 
 class Obstacle(Segment, LookMixin) :
-    def __init__(self, name, a = (0.0, 0.0), b = (0.0, 0.0), radius = 0.0) :
+    def __init__(self, name, a = (0.0, 0.0), b = (0.0, 0.0), radius = 1.0) :
         super(Obstacle, self).__init__(Body(body_type = Body.STATIC), a, b, radius)    
         self.__name = name
 
@@ -166,11 +177,12 @@ class Obstacle(Segment, LookMixin) :
         return (tuple(start), tuple(end))
 
     def draw(self, screen) :
-        (width, height) = screen.get_size()
-        (start, end) = self.get_ends()
-        start_t = (int(width / 2.0 + start[0]), int(height / 2.0 - start[1])) 
-        end_t = (int(width / 2.0 + end[0]), int(height / 2.0 - end[1]))
-        pygame.draw.lines(screen, self.stroke_color, False, [start_t, end_t])
+        if self.visible == True :
+            (width, height) = screen.get_size()
+            (start, end) = self.ends
+            start_t = (int(width / 2.0 + start[0]), int(height / 2.0 - start[1])) 
+            end_t = (int(width / 2.0 + end[0]), int(height / 2.0 - end[1]))
+            pygame.draw.line(screen, self.stroke_color, start_t, end_t, int(self.radius))
         
 
 class OracleSpace(Space) : 
@@ -639,11 +651,15 @@ class Driver(object) :
 
     def go(self) :
         result = True 
-        self.__steps += 1
-        #agents = self.__shedule.pop_agents()
-        #for agent in agents :
-            #if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
-                #self.__agents[agent.name] = agent
+        
+        item = self.__schedule.queue_pop()
+        for obt in item["obstacles"] :
+            self.__context.add_obt(obt)
+        for obj in item["objects"] :
+            self.__context.add_obj(obj)
+        for agent in item["agents"] :
+            if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
+                self.__agents[agent.name] = agent
             
         #self.__resp = self.__context.handle_reqt(self.__reqt)
         #self.__reqt = Response()
@@ -660,6 +676,8 @@ class Driver(object) :
                 #msg.src = name
         #        self.__reqt.add_msg(msg)
 
+        self.__steps += 1
+        
         return result
 
 
