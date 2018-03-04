@@ -1,6 +1,6 @@
 #! /Users/nil/anaconda3/envs/multiagent_1_0/bin/python
 
-# MultiAgent 1.1
+# MultiAgent 2.0 
 # (c) 2017-2018, NiL, csningli@gmail.com
 
 import sys, os, time

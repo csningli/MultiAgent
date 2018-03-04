@@ -1,8 +1,8 @@
 
-# MultiAgent 1.1
+# MultiAgent 2.0 
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-import sys, os, copy, time, datetime, json, math, inspect
+import sys, os, os.path, copy, time, datetime, json, math, inspect
 
 from numpy import array, dot
 from numpy.linalg import norm
@@ -25,8 +25,8 @@ class LookMixin(object) :
 
     __visible = True
     __stroke_color = THECOLORS["black"]
-    __pointer_color = THECOLORS["black"]
     __fill_color = THECOLORS["black"]
+    __pointer_color = THECOLORS["red"]
     
     @property
     def stroke_color(self) :
@@ -135,6 +135,15 @@ class Object(Circle, LookMixin) :
     def force(self, force) :
         self.body.force = force
 
+    @property
+    def props(self) : # props is in key-value dict.
+        p = {}
+        return p
+
+    @props.setter
+    def props(self, p) :
+        pass
+
     def draw(self, screen) :
         if self.visible == True :
             p = Vec2d(self.pos)
@@ -176,6 +185,15 @@ class Obstacle(Segment, LookMixin) :
         end = body.position + self.b.cpvrotate(body.rotation_vector)
         return (tuple(start), tuple(end))
 
+    @property
+    def props(self) : # props is in key-value dict.
+        p = {}
+        return p
+
+    @props.setter
+    def props(self, p) :
+        pass
+
     def draw(self, screen) :
         if self.visible == True :
             (width, height) = screen.get_size()
@@ -208,11 +226,11 @@ class OracleSpace(Space) :
 
     @property
     def objs(self) :
-        return copy.copy(self.__objs)
+        return self.__objs
 
     @property
     def obts(self) :
-        return copy.copy(self.__obts)
+        return self.__obts
 
     def add_obj(self, obj) :
         if check_attrs(obj, 
@@ -260,9 +278,6 @@ class OracleSpace(Space) :
     def draw(self, screen) :
         for obj in self.objs.values() + self.obts.values() :
             obj.draw(screen)
-
-    def step(self) :
-        pass
 
 
 class Message(object) :
@@ -332,186 +347,6 @@ class Request(object) :
 class Response(Request) :
     pass
 
-
-class Context(object) : 
-    def __init__(self, objs = [], obts = [], oracle = None) :  
-        if oracle is not None : 
-            if check_attrs(oracle, 
-                    {   "objs" : None, 
-                        "obts" : None, 
-                        "add_obj" : None,
-                        "add_obt" : None,
-                        "get_obj_with" : None,
-                        "get_obt_with" : None,
-                        "get_objs_at" : None,
-                        "get_obts_at" : None,
-                    }) :
-
-                self.__oracle = oracle
-            else :
-                print("Invalid oracle for the construction of context. Exit.")
-                exit(1)
-        else :
-            self.__oracle = OracleSpace()
-            
-        for obj in objs : 
-            self.add_obj(obj)
-            
-        for obt in obts : 
-            self.add_obj(obj)
-
-        self.__reqt = None 
-        self.__resp = None
-
-    def info(self) :
-        return "<<multiagent.%s has_oracle=%d>>" % (type(self).__name__, self.__oracle is not None)
-
-    def handle_reqt(reqt) :
-        self.__reqt = reqt 
-        self.__resp = Response() 
-        return self.__resp
-
-    def draw(self, screen) :
-        self.__oracle.draw(screen)
-
-    def add_obj(self, obj) : 
-        return self.__oracle.add_obj(obj)
-
-    def add_obt(self, obt) : 
-        return self.__oracle.add_obt(obt)
-        
-
-
-class Buffer(object) :
-    def __init__(self) :
-        self.__content = {}
-
-    def reg(self, key, value) :
-        self.__content[key] = value
-
-    def read(self, key, default_value) :
-        return self.__content.get(key, default_value) 
-    
-    
-class Module(object) :
-    def __init__(self) : 
-        self.__buff = Buffer() 
-
-    def sense(self, reqt, resp) :
-        pass
-
-    def process(self, reqt, resp) :
-        pass
-
-    def act(self, reqt, resp) :
-        pass
-        
-
-class Agent(object) : 
-    def __init__(self, name, mods = []) : 
-        self.__name = name
-        self.__group_num = 0 
-        self.__mods = []
-        for mod in mods :
-            self.add_mod(mod)
-        self.__reqt = None
-        self.__resp = None
-    
-    def info(self) :
-        return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
-
-    @property
-    def name(self) :
-        return self.__name
-
-    @name.setter
-    def name(self, name) :
-        self.__name = name
-
-    @property
-    def group_num(self) :
-        return self.__group_num
-
-    @group_num.setter
-    def group_num(self, num) :
-        self.__group_num = num
-
-    def add_mod(self, mod) :
-        if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
-            self.__mods.append(mod)
-
-    def handle_reqt(self, reqt) :
-        self.__reqt = reqt
-        self.__resp = Response()
-
-        for mod in mods :
-            mod.sense(self.__reqt, self.__resp)
-
-        for mod in mods :
-            mod.process(self.__reqt, self.__resp)
-
-        for mod in mods :
-            mod.act(self.__reqt, self.__resp)
-
-        return self.__resp
-    
-
-class Shot(object) :
-    def __init__(self) :
-        self.__shot = {
-            "obj_props" : {
-            },
-            "obj_props" : {
-            },
-            "context_paras" : {
-            },
-            "agent_memos" : {
-            },
-        }
-
-    @property
-    def obj_props(self) :
-        return copy.copy(self.__shot["obj_props"])
-
-    @property
-    def agent_memos(self) :
-        return copy.copy(self.__shot["agent_memos"])
-
-    @property
-    def context_paras(self) :
-        return copy.copy(self.__shot["context_paras"])
-
-    def set_obj_prop(self, name, key, value = None) :
-        if name not in self.__shot["obj_props"].keys() :
-            self.__shot["obj_props"][name] = {}
-        self.__shot["obj_props"][name][key] = value
-
-    def set_anget_memo(self, name, key, value = None) :
-        if name not in self.__shot["agent_memos"].keys() :
-            self.__shot["agent_memos"][name] = {}
-        self.__shot["agent_memos"][name][key] = value  
-
-    def set_context_para(self, key, value = None) :
-        self.__shot["context_paras"][key] = value  
-        
-        
-class Data(object) : 
-    def __init__(self) :
-        self.__data = []
-
-    def add_shot(self, shot) :
-        if check_attrs(shot, {}) :
-            self.data.append(shot)
-
-    def get_shot(self, index) :
-        if type(index).__name__ == "int" and index >= 0 and index < self.__data.size() :
-            return self.__data[index]
-            
-
-class Inspector(object) : 
-    pass
-
-
 class Timer(object) :
     def __init__(self, delta = 0.01) :
         self.__read = 0.0
@@ -542,14 +377,342 @@ class Timer(object) :
         else :
             self.__read += self.__delta
 
-    def tack(self, delta = None) :
-        if delta is not None :
-            self.__read -= delta
-        else :
-            self.__read -= self.__delta
 
-        if self.__read < 0 : 
-            self.__read = 0
+class Context(object) : 
+    def __init__(self, oracle = None, delta = 0.01, objs = [], obts = []) :  
+        if oracle is not None : 
+            if check_attrs(oracle, 
+                    {   "objs" : None, 
+                        "obts" : None, 
+                        "add_obj" : None,
+                        "add_obt" : None,
+                        "get_obj_with" : None,
+                        "get_obt_with" : None,
+                        "get_objs_at" : None,
+                        "get_obts_at" : None,
+                    }) :
+
+                self.__oracle = oracle
+            else :
+                print("Invalid oracle for the construction of context. Exit.")
+                exit(1)
+        else :
+            self.__oracle = OracleSpace()
+
+        if type(delta).__name__ in ["float", "int"] :
+            self.__timer = Timer(float(delta))
+        else :
+            print("Invalid delta for the construction of context. Exit.")
+            exit(1)
+            
+        for obj in objs : 
+            self.add_obj(obj)
+            
+        for obt in obts : 
+            self.add_obj(obj)
+
+        self.__reqt = None 
+        self.__resp = None
+
+    def info(self) :
+        return "<<multiagent.%s has_oracle=%d>>" % (type(self).__name__, self.__oracle is not None)
+
+    @property
+    def time(self) :
+        return self.__timer.read
+
+    @property 
+    def obj_props(self) : # obj_props is in name-dict dict.
+        props = {}
+        for name, obj in self.__oracle.objs.items() :
+            props[name] = obj.props
+        return props
+
+    @obj_props.setter
+    def obj_props(self, props) :
+        for name, prop in props.items() : 
+            obj = self.__oracle.objs.get(name, None)
+            if obj is not None :
+                obj.props = props
+    
+    @property 
+    def obt_props(self) : # obt_props is in name-dict dict.
+        props = {}
+        for name, obt in self.__oracle.obts.items() :
+            props[name] = obt.props
+        return props
+
+    @obt_props.setter
+    def obt_props(self, props) :
+        for name, prop in props.items() : 
+            obt = self.__oracle.obts.get(name, None)
+            if obt is not None :
+                obt.props = props
+
+    @property 
+    def paras(self) : # paras is in key-value dict.
+        p = {}
+        
+        p["time"] = self.__timer.read
+
+        return p
+
+    @paras.setter
+    def paras(self, p) :
+        self.__timer.read = float(p["time"]) 
+
+    def handle_reqt(self, reqt) :
+        self.__reqt = reqt 
+        self.__resp = Response() 
+
+        self.__oracle.step(self.__timer.delta)
+        self.__timer.tick()
+        
+        return self.__resp
+
+    def draw(self, screen) :
+        self.__oracle.draw(screen)
+
+    def add_obj(self, obj) : 
+        return self.__oracle.add_obj(obj)
+
+    def remove_obj(self, name) :
+        pass
+
+    def add_obt(self, obt) : 
+        return self.__oracle.add_obt(obt)
+
+    def remove_obt(self, name) :
+        pass
+
+    def get_time_by_steps(self, steps) :
+        return self.__timer.delta * steps
+        
+
+class Memory(object) :
+    def __init__(self) :
+        self.__content = {}
+
+    def reg(self, key, value) :
+        self.__content[key] = value
+
+    def read(self, key, default_value) :
+        return self.__content.get(key, default_value) 
+    
+    
+class Module(object) :
+    def __init__(self) : 
+        self.__mem = Memory() 
+
+    @property
+    def memo(self) :
+        m = {}
+        return m
+
+    @memo.setter
+    def memo(self, m) :
+        pass
+
+    def sense(self, reqt, resp) :
+        pass
+
+    def process(self, reqt, resp) :
+        pass
+
+    def act(self, reqt, resp) :
+        pass
+
+class Agent(object) : 
+    def __init__(self, name, mods = []) : 
+        self.__name = name
+        self.__group_num = 0 
+        self.__mem = Memory()
+        
+        self.__mods = []
+        for mod in mods :
+            self.add_mod(mod)
+            
+        self.__reqt = None
+        self.__resp = None
+    
+    def info(self) :
+        return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
+
+    @property
+    def name(self) :
+        return self.__name
+
+    @name.setter
+    def name(self, name) :
+        self.__name = name
+
+    @property
+    def group_num(self) :
+        return self.__group_num
+
+    @group_num.setter
+    def group_num(self, num) :
+        self.__group_num = num
+
+    @property
+    def memo(self) : # memo is in key-value dict.
+        m = {}
+        # pack own memo
+        # collect modules' memos
+        return m
+
+    @memo.setter
+    def memo(self, m) : 
+        # unpack own memo
+        # distribute modules' memos
+        pass
+
+    def add_mod(self, mod) :
+        if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
+            self.__mods.append(mod)
+
+    def handle_reqt(self, reqt) :
+        self.__reqt = reqt
+        self.__resp = Response()
+
+        for mod in self.__mods :
+            mod.sense(self.__reqt, self.__resp, self.__mem)
+
+        for mod in self.__mods :
+            mod.process(self.__reqt, self.__resp, self.__mem)
+
+        for mod in self.__mods :
+            mod.act(self.__reqt, self.__resp, self.__mem)
+
+        return self.__resp
+    
+
+class Shot(object) :
+    def __init__(self) :
+        self.__shot = {
+            "obj_props" : {},
+            "obt_props" : {},
+            "context_paras" : {},
+            "agent_memos" : {},
+        }
+
+    @property
+    def obj_props(self) : # obj_props is in name-dict dict.
+        return copy.copy(self.__shot["obj_props"])
+
+    @obj_props.setter
+    def obj_props(self, props) :
+        self.__shot["obj_props"] = copy.copy(props)
+
+    @property
+    def obt_props(self) : # obt_props is in name-dict dict.
+        return copy.copy(self.__shot["obt_props"])
+
+    @obt_props.setter
+    def obt_props(self, props) :
+        self.__shot["obt_props"] = copy.copy(props)
+
+    @property
+    def agent_memos(self) : # agent_memos is in name-dict dict.
+        return copy.copy(self.__shot["agent_memos"])
+
+    @agent_memos.setter
+    def agent_memos(self, memos) :
+        self.__shot["agent_memos"] = copy.copy(memos)
+
+    @property
+    def context_paras(self) : # context_paras is in name-value dict.
+        return copy.copy(self.__shot["context_paras"])
+
+    @context_paras.setter
+    def context_paras(self, paras) :
+        self.__shot["context_paras"] = copy.copy(paras)
+
+    #def set_obj_prop(self, name, key, value = None) :
+        #if name not in self.__shot["obj_props"].keys() :
+            #self.__shot["obj_props"][name] = {}
+        #self.__shot["obj_props"][name][key] = value
+    
+    #def set_obt_prop(self, name, key, value = None) :
+        #if name not in self.__shot["obt_props"].keys() :
+            #self.__shot["obt_props"][name] = {}
+        #self.__shot["obt_props"][name][key] = value
+
+    #def set_anget_memo(self, name, key, value = None) :
+        #if name not in self.__shot["agent_memos"].keys() :
+            #self.__shot["agent_memos"][name] = {}
+        #self.__shot["agent_memos"][name][key] = value  
+
+    #def set_context_para(self, key, value = None) :
+    #    self.__shot["context_paras"][key] = value  
+        
+        
+class Data(object) : 
+    def __init__(self) :
+        self.__data = []
+        self.__filename =  "multiagent_%s.data" % datetime.datetime.now().strftime("%Y%m%d%H%M%S_%f")
+
+    @property 
+    def size(self) :
+        return len(self.__data)
+        
+    @property
+    def filename(self) :
+        return self.__filename
+
+    @filename.setter
+    def filename(self, fn) :
+        if len(self.__data) > 0 :
+            self.to_file()
+        self.__filename = fn
+        self.from_file()
+
+    def add_shot(self, shot) :
+        if check_attrs(shot, {"obj_props" : None, "obt_props" : None, "context_paras" : None, "agent_memos" : None}) :
+            self.__data.append(shot)
+
+    def get_shot(self, index) :
+        if type(index).__name__ == "int" and index >= 0 and index < len(self.__data) :
+            return self.__data[index]
+    
+    def to_file(self) :
+        result = False
+
+        if self.__filename != None :
+            with open(self.__filename, 'w') as f : 
+                data = []
+                for shot in self.__data : 
+                    data.append({
+                        "obj_props" : shot.obj_props,
+                        "obt_props" : shot.obt_props,
+                        "context_paras" : shot.context_paras,
+                        "agent_memos" : shot.agent_memos,
+                    })
+                json.dump(data, f)
+                result = True
+                
+        return result
+
+    def from_file(self) :
+        self.__data = []
+        
+        if self.__filename != None and os.path.isfile(self.__filename) :
+            data = []
+            with open(self.__filename, 'r') as f : 
+                data = json.load(f)
+                
+            for d in data :  
+                shot = Shot()
+                shot.obj_props = d["obj_props"]
+                shot.obt_props = d["obt_props"]
+                shot.agent_memos = d["agent_memos"]
+                shot.context_paras = d["context_paras"]
+                self.add_shot(shot)
+
+
+class Inspector(object) : 
+    pass
+
 
 
 class Schedule(object) :
@@ -560,30 +723,30 @@ class Schedule(object) :
         return "<<multiagent.%s queue_len=%d>>" % (type(self).__name__, len(self.__queue))
     
     def add_obj(self, obj, delay = 0) :
-        self.queue_append(item = obj, category = "objects", delay = delay)
+        self.queue_append(item = obj, category = "obj", delay = delay)
 
     def add_obt(self, obt, delay = 0) :
-        self.queue_append(item = obt, category = "obstacles", delay = delay)
+        self.queue_append(item = obt, category = "obt", delay = delay)
 
     def add_agent(self, agent, delay = 0) :
-        self.queue_append(item = agent, category = "agents", delay = delay)
+        self.queue_append(item = agent, category = "agent", delay = delay)
 
     def queue_append(self, item, category, delay = 0) :
         if int(delay) not in self.__queue.keys() :
             self.__queue[int(delay)] = {
-                "objects" : [],
-                "obstacles" : [],
-                "agents" : [],
+                "obj" : [],
+                "obt" : [],
+                "agent" : [],
             }
-        if category in ["objects", "obstacles", "agents"] :
+        if category in ["obj", "obt", "agent"] :
             self.__queue[int(delay)][category].append(item)
 
-    def queue_pop(self) : 
-        item = self.__queue.get(0, {"objects" : [], "obstacles" : [], "agents" : [],})
+    def queue_pop(self) : # the poped item is key-list dict. 
+        item = self.__queue.get(0, {"obj" : [], "obt" : [], "agent" : [],})
         self.__queue[0] = {
-            "objects" : [],
-            "obstacles" : [],
-            "agents" : [],
+            "obj" : [],
+            "obt" : [],
+            "agent" : [],
         }
         
         delays = list(self.__queue.keys())
@@ -593,13 +756,13 @@ class Schedule(object) :
                 continue 
             else :
                 self.__queue[delay - 1] = self.__queue[delay]
-                self.__queue[delay] = self.__queue.get(delay + 1, {"objects" : [], "obstacles" : [], "agents" : [],})
+                self.__queue[delay] = self.__queue.get(delay + 1, {"obj" : [], "obt" : [], "agent" : [],})
 
         return item
         
         
 class Driver(object) : 
-    def __init__(self, context, schedule, delta = 0.01, data = None) : 
+    def __init__(self, context, schedule, data = None) : 
         if check_attrs(context, {"handle_reqt" : None}) :
             self.__context = context 
         else :
@@ -612,13 +775,6 @@ class Driver(object) :
         else :
             print("Invalid schedule for the construction of driver. Exit.")
             exit(1)
-
-        if type(delta).__name__ in ["float", "int"] :
-            self.__timer = Timer(float(delta))
-        else :
-            print("Invalid delta for the construction of driver. Exit.")
-            exit(1)
-
 
         self.__steps = 0
         if data is not None :
@@ -636,15 +792,36 @@ class Driver(object) :
         self.__resp = None
 
     @property
+    def filename(self) :
+        return self.__data.filename
+
+    @filename.setter
+    def filename(self, fn = None) :
+        self.__data.filename = fn
+        
+    @property 
+    def agent_memos(self) :
+        memos = {}
+        for name, agent in self.__agents.items() :
+            memos[name] = agent.memo
+
+    @agent_memos.setter
+    def agent_memos(self, memos) :
+        for name, memo in memos.items() : 
+            if name in self.__agents.keys() :
+                self.__agents[name].memo = memos
+
+    @property
     def steps(self) :
         return self.__steps
 
     @property
-    def time(self) :
-        return self.__timer.read
+    def context_time(self) :
+        return self.__context.time
         
     def info(self) :
-        return "<<multiagent.%s has_context=%d has_schedule=%d has_timer=%d agents_num=%d>>" % (type(self).__name__, self.__context is not None, self.__schedule is not None, self.__timer is not None, len(self.__agents))
+        return "<<multiagent.%s has_context=%d has_schedule=%d has_timer=%d agents_num=%d>>" % \
+                (type(self).__name__, self.__context is not None, self.__schedule is not None, self.__timer is not None, len(self.__agents))
 
     def draw(self, screen) :
         self.__context.draw(screen)
@@ -652,32 +829,45 @@ class Driver(object) :
     def go(self) :
         result = True 
         
-        item = self.__schedule.queue_pop()
-        for obt in item["obstacles"] :
-            self.__context.add_obt(obt)
-        for obj in item["objects"] :
-            self.__context.add_obj(obj)
-        for agent in item["agents"] :
-            if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
-                self.__agents[agent.name] = agent
-            
-        #self.__resp = self.__context.handle_reqt(self.__reqt)
-        #self.__reqt = Response()
-        #for name, agent in self.agents.items() :
-            #reqt = Request()
-            #msgs = self._resp.get_msgs(name)
-            #for msg in msgs : 
-                #msg.src = ""
-                #reqt.add_msg(msg)
-            #resp = agent.handle_reqt(reqt) 
-
-            #msgs = resp.get_msgs("")
-            #for msg in msgs : 
-                #msg.src = name
-        #        self.__reqt.add_msg(msg)
-
         self.__steps += 1
         
+        while self.__data.size < self.__steps :
+            self.__data.add_shot(self.take_shot())
+       
+        if self.__steps < self.__data.size :
+            self.apply_shot(self.__data.get_shot(self.__steps))
+        else :
+            item = self.__schedule.queue_pop()
+            for obt in item["obt"] :
+                self.__context.add_obt(obt)
+            for obj in item["obj"] :
+                self.__context.add_obj(obj)
+            for agent in item["agent"] :
+                if check_attrs(agent, {"name" : None, "handle_reqt" : None}) :
+                    self.__agents[agent.name] = agent
+           
+            # get request from agents' handling results
+            
+            self.__reqt = Response()
+            
+            for name, agent in self.__agents.items() :
+                reqt = Request()
+                if self.__resp is not None :
+                    msgs = self.__resp.get_msgs(name)
+                    for msg in msgs : 
+                        msg.src = ""
+                        reqt.add_msg(msg)
+                resp = agent.handle_reqt(reqt) 
+                msgs = resp.get_msgs("")
+                for msg in msgs : 
+                    msg.src = name
+                    self.__reqt.add_msg(msg)
+
+            # get response from context's handling result
+                   
+            self.__resp = self.__context.handle_reqt(self.__reqt)
+            self.__data.add_shot(self.take_shot())
+            
         return result
 
 
@@ -685,10 +875,29 @@ class Driver(object) :
         result = True 
         if self.__steps > 0 :
             self.__steps -= 1
+            self.apply_shot(self.__data.get_shot(self.__steps))
         return result
 
-    def restore(self) :
-        pass
+    def take_shot(self) :
+        shot = Shot()
+        shot.agent_name = self.agent_memos
+        shot.context_paras = self.__context.paras             
+        shot.obj_props = self.__context.obj_props
+        shot.obt_props = self.__context.obt_props
+        return shot
+        
+    def apply_shot(self, shot) :
+        result = False
+        if check_attrs(shot, {"agent_memos" : None, "context_paras" : None, "obj_props" : None, "obt_props" : None}) :
+            self.agent_memos = shot.agent_memos
+            self.__context.paras = shot.context_paras
+            self.__context.obj_props = shot.obj_props
+            self.__context.obt_props = shot.obt_props
+            result = True
+        return result
+
+    def export_data(self) :
+        self.__data.to_file()
 
 
 class Simulator(object) : 
@@ -719,10 +928,13 @@ class Simulator(object) :
         return "<<multiagent.%s has_driver=%d>>" % (type(self).__name__, self.__driver is not None)
 
         
-    def simulate(self, inspector = None, graphics = False, width = 800, height = 800, limit = None) :
+    def simulate(self, inspector = None, width = 800, height = 800, limit = None, graphics = False, filename = None) :
         if self.__driver is None :
             print("No valid driver given. Return.")
             return False 
+
+        if filename is not None :
+            self.__driver.filename = filename
 
         if inspector is None : 
             inspector = self.__inspector
@@ -819,7 +1031,7 @@ class Simulator(object) :
                 sim_info = [ 
                     "{:<10}".format("Speed:") + "%d" % speed, 
                     "{:<10}".format("Steps:") + "%d" % self.__driver.steps, 
-                    "{:<10}".format("Time:") + "%2.6f" % self.__driver.time, 
+                    "{:<10}".format("Time:") + "%2.6f" % self.__driver.context_time, 
                 ]
                 
                 y = 5
@@ -832,11 +1044,15 @@ class Simulator(object) :
                     screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
                     y -= 10
                     
-                pygame.display.set_caption("MultiAgent Simulator v1.1 (c) 2017-2018, NiL, csningli@gmail.com")
+                pygame.display.set_caption("MultiAgent Simulator v2.0 (c) 2017-2018, NiL, csningli@gmail.com")
                 pygame.display.flip()
+
+        # end of the simulation
+        
+        self.__driver.export_data()
 
 
 if __name__ == '__main__' :
     print("")
-    print("MultiAgent Simulator v1.1 (c) 2017-2018, NiL, csningli@gmail.com.")
+    print("MultiAgent Simulator v2.0 (c) 2017-2018, NiL, csningli@gmail.com.")
     
