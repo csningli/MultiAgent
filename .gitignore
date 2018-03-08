@@ -1,3 +1,6 @@
+# MultiAgent
+*.data
+
 # Vim temporaries 
 *.swo
 *.swp
