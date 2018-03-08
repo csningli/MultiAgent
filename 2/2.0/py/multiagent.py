@@ -515,7 +515,7 @@ class Context(object) :
             else :
                 obj_gen = self.__oracle.get_obj_gen()
                 if obj_gen is None : 
-                    obj_gen = self.__scheduler.get_obj_gen()
+                    obj_gen = self.__schedule.get_obj_gen()
                     if obj_gen is None : 
                         obj_gen = Object
                 if len(self.__oracle.objs) > 0 : # thus it is highly recommended that initial context with non-empty objs 
@@ -544,7 +544,7 @@ class Context(object) :
             else :
                 obt_gen = self.__oracle.get_obt_gen()
                 if obt_gen is None : 
-                    obt_gen = self.__scheduler.get_obt_gen()
+                    obt_gen = self.__schedule.get_obt_gen()
                     if obt_gen is None : 
                         obt_gen = Obstacle
                 obt = obt_gen(name = name, 
@@ -636,6 +636,14 @@ class Memory(object) :
     def __init__(self) :
         self.__content = {}
 
+    @property 
+    def content(self) :
+        return copy.copy(self.__content)
+
+    @content.setter
+    def content(self, c) :
+        self.__content = copy.copy(c)
+
     def reg(self, key, value) :
         self.__content[key] = value
 
@@ -649,27 +657,29 @@ class Module(object) :
 
     @property
     def memo(self) :
-        m = {}
+        m = {
+            "_mem" : self.__mem.content 
+        }
         return m
 
     @memo.setter
     def memo(self, m) :
+        self.__mem.content = m["_mem"]
+
+    def sense(self, resp, mem) :
         pass
 
-    def sense(self, reqt, resp) :
+    def process(self, mem) :
         pass
 
-    def process(self, reqt, resp) :
-        pass
-
-    def act(self, reqt, resp) :
+    def act(self, mem, reqt) :
         pass
 
 class Agent(object) : 
 
     def __init__(self, name) : 
         self.__name = name
-        self.__group_num = 0 
+        self.__group_num = -1 
         self.__mem = Memory()
         self.__mods = []
         self.config()
@@ -708,22 +718,39 @@ class Agent(object) :
 
     @group_num.setter
     def group_num(self, num) :
-        self.__group_num = num
+        self.__group_num = int(num)
 
     @property
     def memo(self) : # memo is in key-value dict.
         # pack own memo
         m = {
-            "active" : str(self.active), 
+            "active" : str(self.active), # the memo will be show in the focus information if the key is not prefixed with _ 
+            "group_num" : str(self.group_num), 
+            "_mem" : self.__mem.content, 
+            "_mods" : [], 
         }
+
         # collect modules' memos
+        
+        for mod in self.__mods :
+            m[_mods].append(mod.memo) 
+            
         return m
 
     @memo.setter
     def memo(self, m) : 
+
         # unpack own memo
+        
         self.active = bool(m["active"])
+        self.group_num = int(m["group_num"])
+        self.__mem.cotent = m["_mem"]
+        
         # distribute modules' memos
+        
+        for i in range(len(m["_mods"])) :
+            self.__mods[i].memo = m["_mods"][i]
+
 
     def add_mod(self, mod) :
         if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
@@ -898,13 +925,13 @@ class Schedule(object) :
         return gen
 
     def get_agent_gen(self) :
-        return get_gen("agent")
+        return self.get_gen("agent")
 
     def get_obj_gen(self) :
-        return get_gen("obj")
+        return self.get_gen("obj")
 
     def get_obt_gen(self) :
-        return get_gen("obt")
+        return self.get_gen("obt")
     
     def add_obj(self, obj, delay = 0) :
         self.queue_append(item = obj, category = "obj", delay = delay)
@@ -996,22 +1023,23 @@ class Driver(object) :
         memos = {}
         for name, agent in self.__agents.items() :
             memos[name] = agent.memo
+        return memos
 
     @agent_memos.setter
     def agent_memos(self, memos) :
-        names = [agent.name for agent in self.__agents.values()]
+        names = copy.copy(self.__agents.keys()) 
         for name, memo in memos.items() : 
             agent = self.__agents.get(name, None)
             if agent is not None :
                 agent.memo = memo
                 names.remove(name)
             else :
-                agent_gen = self.__scheduler.get_agent_gen()
+                agent_gen = self.__schedule.get_agent_gen()
                 if agent_gen is None : 
                     agent_gen = Agent 
                 agent = agent_gen(name = name) 
                 agent.memo = memo
-                self.__agents[agent] = agent
+                self.__agents[name] = agent
         for name in names : 
             self.__agents[name].active = False
 
@@ -1091,7 +1119,7 @@ class Driver(object) :
 
     def take_shot(self) :
         shot = Shot()
-        shot.agent_name = self.agent_memos
+        shot.agent_memos = self.agent_memos
         shot.context_paras = self.__context.paras             
         shot.obj_props = self.__context.obj_props
         shot.obt_props = self.__context.obt_props
@@ -1260,9 +1288,9 @@ class Simulator(object) :
                 pygame.display.flip()
 
                 sim_info = [ 
-                    "{:<10}".format("Speed:") + "%d" % speed, 
-                    "{:<10}".format("Steps:") + "%d" % self.__driver.steps, 
-                    "{:<10}".format("Time:") + "%2.4f" % self.__driver.context_time, 
+                    "{:<12}".format("Speed: ") + "%d" % speed, 
+                    "{:<12}".format("Steps: ") + "%d" % self.__driver.steps, 
+                    "{:<12}".format("Time: ") + "%2.4f" % self.__driver.context_time, 
                 ]
                 
                 y = 5
@@ -1270,15 +1298,15 @@ class Simulator(object) :
                     screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
                     y += 10
                 
-                if focus_agent is not None and focus_agent.active == True : 
+                if focus_agent is not None : # and focus_agent.active == True : 
                     focus_info = [
-                        "{:<10}".format("Name:") + "%s" % focus_agent.name, 
+                        "{:<12}".format("Name: ") + "%s" % focus_agent.name, 
                     ]
                     
                     focus_info_width = len(focus_info[-1])
                     for key, value in focus_agent.memo.items() :
                         if len(key) > 0 and key[0] != "_" : # keep the memo internal by prefix it with single underscore, like _key
-                            focus_info.append("{:<10}".format("%s:" % key) + "%s" % value)
+                            focus_info.append("{:<12}".format("%s: " % key) + "%s" % value)
                             focus_info_width = len(focus_info[-1])
                             
                     y = 5
