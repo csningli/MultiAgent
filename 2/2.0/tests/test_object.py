@@ -56,7 +56,7 @@ def test_obt() :
     print("A: (%.1f, %.1f)" % (obt.a[0], obt.a[1]))
     print("B: (%.1f, %.1f)" % (obt.b[0], obt.b[1]))
     print("Radius: %.1f" % obt.radius)
-    print("Ends: (%.1f, %.1f), (%.1f, %.1f)" % (obt.ends[0][0], obt.ends[0][1], obt.ends[1][0], obt.ends[1][1]))
+    print("Ends: (%.1f, %.1f), (%.1f, %.1f)" % (obt.a[0], obt.a[1], obt.b[0], obt.b[1]))
 
 
 if __name__ == '__main__' :

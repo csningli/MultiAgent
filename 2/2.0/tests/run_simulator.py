@@ -10,7 +10,7 @@ sys.path.append("../py")
 
 from multiagent import * 
 
-def run_sim() :
+def run_sim(filename = None) :
     '''
     >>> run_sim()
     '''
@@ -31,14 +31,18 @@ def run_sim() :
     obj.pos = (-40, 0)
     schedule.add_obj(obj, 30)
     driver = Driver(context = context, schedule = schedule)
+
     sim = Simulator(driver = driver)
     print("Simulate")
-    sim.simulate(graphics = True)
+    sim.simulate(graphics = True, filename = filename)
 
 
 
 if __name__ == '__main__' :
-    run_sim()
+    filename = None 
+    if (len(sys.argv) > 1) : 
+        filename = sys.argv[1]
+    run_sim(filename)
 
 
 
