@@ -2,7 +2,7 @@
 # MultiAgent 2.0 
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-import sys, os, os.path, copy, time, datetime, json, math, inspect
+import sys, os, os.path, copy, time, datetime, json, math, inspect, socket, pickle, sqlite3
 
 from numpy import array, dot
 from numpy.linalg import norm
@@ -723,6 +723,7 @@ class Agent(object) :
     @property
     def memo(self) : # memo is in key-value dict.
         # pack own memo
+        
         m = {
             "active" : str(self.active), # the memo will be show in the focus information if the key is not prefixed with _ 
             "group_num" : str(self.group_num), 
@@ -1117,6 +1118,9 @@ class Driver(object) :
             self.apply_shot(self.__data.get_shot(self.__steps))
         return result
 
+    def handle_cmds(self, cmd_msgs) :
+        pass
+
     def take_shot(self) :
         shot = Shot()
         shot.agent_memos = self.agent_memos
@@ -1157,20 +1161,55 @@ class Driver(object) :
             agent = self.__agents[obj.name]
         return agent
 
+class Commander(object) :
+    __database = "./multiagent_commands.db"
+
+    def __init__(self) :
+        self.__con = None
+        self.__timelabel = timelabel()
+
+        if os.path.exists(self.__database) :
+            self.__con = sqlite3.connect(self.__database) 
+            
+    def check(self):
+        msgs = []
+        
+        if self.__con is None and os.path.exists(self.__database) :
+            self.__con = sqlite3.connect(self.__database) 
+            
+        if self.__con is not None :
+            cur = self.__con.cursor()    
+            cur.execute("SELECT * from Commands WHERE timelabel > \"%s\" ORDER BY timelabel DESC" % self.__timelabel)
+            for record in cur.fetchall() :  
+                msgs.append(record[1])
+                if record[0] > self.__timelabel :
+                    self.__timelabel = record[0]
+        return msgs
+
 class Simulator(object) : 
-    def __init__(self, driver, inspector = None) :
+    def __init__(self, driver, cmd = None, inspector = None) :
         self.__driver = None
-        if driver is not None and check_attrs(driver, {"go" : None, "back" : None}) :
+        if driver is not None and check_attrs(driver, {"go" : None, "back" : None, "handle_cmds" : None}) :
             self.__driver = driver 
         else :
-            print("Invalid driver. Exit")
+            print("Invalid driver for the initialization of the simulator. Exit")
             exit(1)
             
+        self.__cmd = None
+        if cmd is None :
+            self.__cmd = Commander()
+        else :
+            if check_attrs(cmd, {"check" : None,}) :
+                self.__cmd = cmd
+            else :
+                print("Invalid commander for the initialization of the simulator. Create a new one.")
+                exit(1)
+
+        self.__inspector = None 
         if inspector is None or check_attrs(inspector, {}) :
             self.__inspector = inspector 
         else :
-            
-            print("Invalid inspector. Exit")
+            print("Invalid inspector for the initialization of the simulator. Exit")
             exit(1)
 
     def info(self) :
@@ -1211,6 +1250,8 @@ class Simulator(object) :
 
         focus_info = []
         focus_agent = None
+
+        cmd_msgs = []
 
         if filename is not None :
             self.__driver.filename = filename
@@ -1262,7 +1303,8 @@ class Simulator(object) :
             clock.tick(1 / self.__driver.context_timer_delta)
             
             if (phases is None or phases != 0) and (pause == False) : 
-               
+                self.__driver.handle_cmds(cmd_msgs) 
+                cmd_msgs = []
                 if phases is None or phases > 0 : 
                     for i in range(speed) :
                         self.__driver.go()
@@ -1274,11 +1316,15 @@ class Simulator(object) :
                     for i in range(speed) :
                         self.__driver.back() 
                     phases += 1
-
                 if phases == 0 :
                     pause = True
-
                 updated = True
+            else : 
+                msgs = self.__cmd.check()
+                if len(msgs) > 0 :
+                    cmd_msgs = msgs + cmd_msgs
+                updated = True
+                    
 
             if updated == True and screen is not None :
             
@@ -1288,9 +1334,9 @@ class Simulator(object) :
                 pygame.display.flip()
 
                 sim_info = [ 
-                    "{:<12}".format("Speed: ") + "%d" % speed, 
-                    "{:<12}".format("Steps: ") + "%d" % self.__driver.steps, 
-                    "{:<12}".format("Time: ") + "%2.4f" % self.__driver.context_time, 
+                    "{: <12}".format("Speed: ") + "%d" % speed, 
+                    "{: <12}".format("Steps: ") + "%d" % self.__driver.steps, 
+                    "{: <12}".format("Time: ") + "%2.4f" % self.__driver.context_time, 
                 ]
                 
                 y = 5
@@ -1300,24 +1346,31 @@ class Simulator(object) :
                 
                 if focus_agent is not None : # and focus_agent.active == True : 
                     focus_info = [
-                        "{:<12}".format("Name: ") + "%s" % focus_agent.name, 
+                        "{: <20}".format("Name: ") + "%s" % focus_agent.name, 
                     ]
                     
                     focus_info_width = len(focus_info[-1])
                     for key, value in focus_agent.memo.items() :
                         if len(key) > 0 and key[0] != "_" : # keep the memo internal by prefix it with single underscore, like _key
-                            focus_info.append("{:<12}".format("%s: " % key) + "%s" % value)
+                            focus_info.append("{: <20}".format("%s:" % key) + "%s" % value)
                             focus_info_width = len(focus_info[-1])
                             
                     y = 5
                     for line in focus_info:
-                        screen.blit(font.render(line, 1, THECOLORS["black"]), (screen.get_width() - 10 * focus_info_width, y))
+                        screen.blit(font.render(line, 1, THECOLORS["black"]), (screen.get_width() - 6 * focus_info_width - 10, y))
                         y += 10
+
+                if len(cmd_msgs) > 0 :
+                    y = height - 20
+                    for msg in cmd_msgs :   
+                        screen.blit(font.render(msg, 1, THECOLORS["red"]), (screen.get_width() - 6 * len(msg) - 10 , y))
+                        y -= 10
 
                 y = height - 20
                 for line in help_info:
                     screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
                     y -= 10
+
                     
                 pygame.display.set_caption("MultiAgent Simulator v2.0 (c) 2017-2018, NiL, csningli@gmail.com")
                 pygame.display.flip()

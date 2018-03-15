@@ -2,6 +2,7 @@
 # MultiAgent 2.0 
 # (c) 2017-2018, NiL, csningli@gmail.com
 
+import time, datetime
 from numpy import array, dot
 from numpy.linalg import norm
 
@@ -56,7 +57,28 @@ def check_attrs(obj, attrs) :
         is_valid = False
     return is_valid                   
 
+
 def check_length_equals_two(obj) :
     return check_attrs(obj, {"__getitem__" : None, "__len__" : None}) and len(obj) == 2 
+    
+    
+def timelabel() :
+    return datetime.datetime.now().strftime('%y%m%d.%H%M%S.%f')
 
 
+def dict2str(d) :
+    result = ""
+    if (hasattr(d, "items")) :
+        for key, value in d.items() :
+            if result != "" :
+                result += ";"
+            result += "%s:%s" % (key, value)
+    return result
+
+def str2dict(s) :
+    result = {}
+    for item in result.strip().split(';') :
+        if len(item.strip().split(':')) > 1 :
+            result[item.strip().split(':')[0]] = item.strip().split(':')[0]
+    return result
+        
