@@ -3,11 +3,12 @@
 # copyright, 2018, NiL, csningli@gmail.com
 
 import sys, os, time, datetime, pickle, copy, readline, sqlite3
-from copy import copy
 from utils import * 
 
-class MultiAgentConsole :
-    __promote = "MAC"
+class MultiAgentCommand :
+    __promote = "CMA"
+    __title = "Command for MultiAgent"
+    __copyright = "(c) copyright 2018, NiL, csningli@gmail.com"
     __database = "./multiagent_commands.db"
 
     def __init__(self) :
@@ -28,7 +29,7 @@ class MultiAgentConsole :
             readline.add_history("req " + record[1])
         
     def run(self) :
-        print("MultiAgentConsole")
+        print("%s | %s" % (self.__title, self.__copyright))
         print("=" * 50)
         while True :
             if sys.version_info[0] == 2 :
@@ -72,7 +73,7 @@ class MultiAgentConsole :
     
 
 if __name__ == '__main__' :
-    c = MultiAgentConsole()
+    c = MultiAgentCommand()
     c.run()
 
 

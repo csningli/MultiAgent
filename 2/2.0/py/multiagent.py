@@ -2,7 +2,7 @@
 # MultiAgent 2.0 
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-import sys, os, os.path, copy, time, datetime, json, math, inspect, socket, pickle, sqlite3
+import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3
 
 from numpy import array, dot
 from numpy.linalg import norm
@@ -647,7 +647,7 @@ class Memory(object) :
     def reg(self, key, value) :
         self.__content[key] = value
 
-    def read(self, key, default_value) :
+    def read(self, key, default_value = None) :
         return self.__content.get(key, default_value) 
     
     
@@ -666,32 +666,51 @@ class Module(object) :
     def memo(self, m) :
         self.__mem.content = m["_mem"]
 
-    def sense(self, resp, mem) :
+    def sense(self, reqt, mem) : # can directly access or modify "mem" - the request received by the host agent
         pass
 
-    def process(self, mem) :
+    def process(self, mem) : # can directly access or modify "mem" - the memory of the host agent
         pass
 
-    def act(self, mem, reqt) :
+    def act(self, mem, resp) : # can directly access or modify "resp" - the response will be sent by the host agent
         pass
+
+class BasicModule(Module) :
+
+    def sense(self, reqt, mem) : 
+        for msg in reqt.get(mem.read("name"), []) : 
+            if msg.key == "pos" :
+                mem.reg(key = "pos", value = msg.value)
+            elif msg.key == "angle" :
+                mem.reg(key = "angle", value = msg.value)
+            elif msg.key == "vel" :
+                mem.reg(key = "vel", value = msg.value)
+            elif msg.key == "avel" :
+                mem.reg(key = "avel", value = msg.value)
+            elif msg.key == "force" :
+                mem.reg(key = "force", value = msg.value)
+            elif msg.key == "color" :
+                mem.reg(key = "color", value = msg.value)
 
 class Agent(object) : 
 
     def __init__(self, name) : 
-        self.__name = name
+        self.__name = "" 
         self.__group_num = -1 
         self.__mem = Memory()
         self.__mods = []
-        self.config()
-        
         self.__reqt = None
         self.__resp = None
-        
         self.__active = True
+        
+        self.name = name
+        self.config()
 
-    def config(self) :
+    def config(self, mods = []) :
         # configure the modules for the agent 
-        pass
+        for mod in mods :
+            if check_attrs(mod, {"memo" : None, "sense" : None, "process" : None, "act" : None}) :
+                self.__mods.append(mod)
     
     def info(self) :
         return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
@@ -703,6 +722,7 @@ class Agent(object) :
     @name.setter
     def name(self, name) :
         self.__name = name
+        self.__mem.reg("name", self.__name)
 
     @property
     def active(self) :
@@ -727,6 +747,10 @@ class Agent(object) :
         m = {
             "active" : str(self.active), # the memo will be show in the focus information if the key is not prefixed with _ 
             "group_num" : str(self.group_num), 
+            "pos" : str(self.__mem.read("pos")),
+            "angle" : str(self.__mem.read("angle")),
+            "vel" : str(self.__mem.read("vel")),
+            "avel" : str(self.__mem.read("avel")),
             "_mem" : self.__mem.content, 
             "_mods" : [], 
         }
@@ -762,13 +786,11 @@ class Agent(object) :
         self.__resp = Response()
 
         for mod in self.__mods :
-            mod.sense(self.__reqt, self.__resp, self.__mem)
-
+            mod.sense(self.__reqt, self.__mem)
         for mod in self.__mods :
-            mod.process(self.__reqt, self.__resp, self.__mem)
-
+            mod.process(self.__mem)
         for mod in self.__mods :
-            mod.act(self.__reqt, self.__resp, self.__mem)
+            resp = mod.act(self.__mem, self.__resp)
 
         return self.__resp
     
@@ -899,10 +921,6 @@ class Data(object) :
                 shot.agent_memos = d["agent_memos"]
                 shot.context_paras = d["context_paras"]
                 self.add_shot(shot)
-
-
-class Inspector(object) : 
-    pass
 
 
 class Schedule(object) :
@@ -1110,7 +1128,6 @@ class Driver(object) :
             
         return result
 
-
     def back(self) :    
         result = True 
         if self.__steps > 0 :
@@ -1122,11 +1139,13 @@ class Driver(object) :
         pass
 
     def take_shot(self) :
-        shot = Shot()
-        shot.agent_memos = self.agent_memos
-        shot.context_paras = self.__context.paras             
-        shot.obj_props = self.__context.obj_props
-        shot.obt_props = self.__context.obt_props
+        shot = self.__data.get_shot(self.__steps) 
+        if shot is None :
+            shot = Shot()
+            shot.agent_memos = self.agent_memos
+            shot.context_paras = self.__context.paras             
+            shot.obj_props = self.__context.obj_props
+            shot.obt_props = self.__context.obt_props
         return shot
         
     def apply_shot(self, shot) :
@@ -1161,6 +1180,37 @@ class Driver(object) :
             agent = self.__agents[obj.name]
         return agent
 
+
+class Inspector(object) : 
+    def __init__(self, delay = 0) :
+        self.__delay = 0
+        self.__count = 0
+        
+        self.delay = delay
+        self.reset()
+
+    @property 
+    def delay(self) :
+        return self.__delay
+
+    @delay.setter 
+    def delay(self, value) :
+        self.__delay = value
+
+    def reset(self) :
+        self.__count = self.__delay
+
+    def check(self, shot) :
+        result = "pass"
+        if self.__count > 0 :  
+            self.__count -= 1
+        else :
+            if shot is not None and check_attrs(shot, {"obj_props" : None, "obt_props" : None, "agent_memos" : None, "context_paras" : None}) :
+                pass
+            self.reset()
+        return result   
+
+
 class Commander(object) :
     __database = "./multiagent_commands.db"
 
@@ -1186,6 +1236,7 @@ class Commander(object) :
                     self.__timelabel = record[0]
         return msgs
 
+
 class Simulator(object) : 
     def __init__(self, driver, cmd = None, inspector = None) :
         self.__driver = None
@@ -1206,7 +1257,7 @@ class Simulator(object) :
                 exit(1)
 
         self.__inspector = None 
-        if inspector is None or check_attrs(inspector, {}) :
+        if inspector is None or check_attrs(inspector, {"check" : None}) :
             self.__inspector = inspector 
         else :
             print("Invalid inspector for the initialization of the simulator. Exit")
@@ -1310,14 +1361,20 @@ class Simulator(object) :
                         self.__driver.go()
                     if phases is not None and phases > 0 :
                         phases -= 1
-                    #if inspector is not None and not inspector.check(driver = self.__driver) : 
-                        #pause = True
+                    if inspector is not None :
+                        check_result = inspector.check(self.__driver.take_shot())
+                        if check_result == "pause" :
+                            pause = True
+                        elif check_result == "exit" :
+                            running = False
                 elif phases < 0 :
                     for i in range(speed) :
                         self.__driver.back() 
                     phases += 1
+                    
                 if phases == 0 :
                     pause = True
+                    
                 updated = True
             else : 
                 msgs = self.__cmd.check()
