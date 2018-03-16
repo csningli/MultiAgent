@@ -350,6 +350,16 @@ class OracleSpace(Space) :
         for obj in self.objs.values() + self.obts.values() :
             obj.draw(screen)
 
+    def clear(self, dist) :
+        names_of_dead = []
+        for name, obj in self.__objs.items() :
+            if ppdist_l2(obj.pos, (0, 0)) > dist :
+                self.remove(obj.body)
+                names_of_dead.append(name)
+        for name in names_of_dead :
+            del(self.__objs[name])
+        return names_of_dead
+
 
 class Message(object) :
     def __init__(self, src = "", dest = "", key = "", value = "") :
@@ -630,6 +640,9 @@ class Context(object) :
 
     def get_obts_at(self, pos, d = 0) :
         return self.__oracle.get_obts_at(tuple(pos), d)
+
+    def clear(self, dist) :
+        return self.__oracle.clear(dist)
         
 
 class Memory(object) :
@@ -1135,6 +1148,12 @@ class Driver(object) :
             self.apply_shot(self.__data.get_shot(self.__steps))
         return result
 
+    def clear(self, dist) :
+        agents_to_die = self.__context.clear(dist)
+        for name in agents_to_die :
+            if name in self.__agents.keys() :
+                del(self.__agents[name])
+
     def handle_cmds(self, cmd_msgs) :
         pass
 
@@ -1367,6 +1386,7 @@ class Simulator(object) :
                             pause = True
                         elif check_result == "exit" :
                             running = False
+                    self.__driver.clear(2.0 * ppdist_l2((width, height), (0, 0)))
                 elif phases < 0 :
                     for i in range(speed) :
                         self.__driver.back() 
