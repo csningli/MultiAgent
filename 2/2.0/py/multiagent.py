@@ -413,10 +413,10 @@ class Request(object) :
 
     @property
     def content(self) :
-        return copy.copy(self.__content)
+        return self.__content
 
     def add_msg(self, msg) :
-        if check_attrs(msg, {"src" : None, "dest" : None, "key" : None, "value" : None}) and msg.dest != "" : 
+        if check_attrs(msg, {"src" : None, "dest" : None, "key" : None, "value" : None}) : 
             if msg.dest not in self.__content.keys() :
                 self.__content[str(msg.dest)] = [] # msgs are organized according to the dest. 
             self.__content[str(msg.dest)].append(msg)
@@ -599,12 +599,9 @@ class Context(object) :
                     obj.force = msg.value
                 elif msg.key == "color" : 
                     obj.fill_color = msg.value
-            self.__resp.add_msg(Message(src = "", dest = name, key = "pos", value = obj.pos))
-            self.__resp.add_msg(Message(src = "", dest = name, key = "angle", value = obj.angle))
-            self.__resp.add_msg(Message(src = "", dest = name, key = "vel", value = obj.vel))
-            self.__resp.add_msg(Message(src = "", dest = name, key = "avel", value = obj.avel))
-            self.__resp.add_msg(Message(src = "", dest = name, key = "force", value = obj.force))
-            self.__resp.add_msg(Message(src = "", dest = name, key = "color", value = obj.fill_color))
+            for key, value in {"pos" : obj.pos, "angle" : obj.angle, "vel" : obj.vel, "avel" : obj.avel, 
+                    "force" : obj.force, "color" : obj.fill_color}.items() :
+                self.__resp.add_msg(Message(dest = name, key = key, value = value))
 
         # handle the communication signals and the radar signals.
         
@@ -669,12 +666,16 @@ class Module(object) :
         self.__mem = Memory() 
 
     @property
+    def mem(self) :
+        return self.__mem 
+        
+    @property
     def memo(self) :
         m = {
             "_mem" : self.__mem.content 
         }
         return m
-
+        
     @memo.setter
     def memo(self, m) :
         self.__mem.content = m["_mem"]
@@ -688,25 +689,24 @@ class Module(object) :
     def act(self, mem, resp) : # can directly access or modify "resp" - the response will be sent by the host agent
         pass
 
-class BasicModule(Module) :
 
+class BasicModule(Module) :
     def sense(self, reqt, mem) : 
         for msg in reqt.get_msgs(mem.read("name")) : 
-            if msg.key == "pos" :
-                mem.reg(key = "pos", value = msg.value)
-            elif msg.key == "angle" :
-                mem.reg(key = "angle", value = msg.value)
-            elif msg.key == "vel" :
-                mem.reg(key = "vel", value = msg.value)
-            elif msg.key == "avel" :
-                mem.reg(key = "avel", value = msg.value)
-            elif msg.key == "force" :
-                mem.reg(key = "force", value = msg.value)
-            elif msg.key == "color" :
-                mem.reg(key = "color", value = msg.value)
+            for prop in ["pos", "angle", "vel", "avel", "force", "color"] :
+                if msg.key == prop :
+                    mem.reg(key = prop, value = msg.value)
+                    self.mem.reg(key = prop, value = msg.value)
+                    break
+                
+    def act(self, mem, resp) : 
+        for prop in ["vel", "avel", "force", "color"] :
+            value = mem.read(prop, None)
+            if value is not None and value != self.mem.read(prop, None) :
+                resp.add_msg(Message(key = prop, value = value))
+
 
 class Agent(object) : 
-
     def __init__(self, name) : 
         self.__name = "" 
         self.__group_num = -1 
@@ -753,6 +753,10 @@ class Agent(object) :
     @group_num.setter
     def group_num(self, num) :
         self.__group_num = int(num)
+
+    @property
+    def mem(self) :
+        return self.__mem 
 
     @property
     def memo(self) : # memo is in key-value dict.
