@@ -341,10 +341,23 @@ class OracleSpace(Space) :
         obts = []
         if hasattr(c, "__len__") and len(c) > 1 : 
             for obt in self.obts : 
-                (start, end) = obt.ends
-                if dist(c, start, end) < d:
+                if dist(c, obt.start, obt.end) < d:
                     obts.append(obt)
         return obts
+
+    def touch(self, c, d = 0) :
+        blocks = []
+        for obj in self.get_objs_at(c, d) :
+            l = ppdist_l2(obj.pos, c) 
+            x = obs.pos[0] - c[0]
+            y = obs.pos[1] - c[1]
+            x *= max(0, l - obj.radius)
+            y *= max(0, l - obj.radius)
+            blocks.append((x, y))
+        for obt in self.get_obts_at(c, d) :
+            diff = pldiff(c, obt.start, obt.end)
+            blocks.append((- diff[0], - diff[1]))
+        return blocks
 
     def draw(self, screen) :
         for obj in self.objs.values() + self.obts.values() :
@@ -414,6 +427,10 @@ class Request(object) :
     @property
     def content(self) :
         return self.__content
+
+    @property
+    def dests(self) :
+        return self.__content.keys()
 
     def add_msg(self, msg) :
         if check_attrs(msg, {"src" : None, "dest" : None, "key" : None, "value" : None}) : 
@@ -604,7 +621,28 @@ class Context(object) :
                 self.__resp.add_msg(Message(dest = name, key = key, value = value))
 
         # handle the communication signals and the radar signals.
-        
+       
+        radio_msgs = []
+        radar_src_dist = {} 
+        for name, ms in msgs.items() :
+            for msg in ms :
+                if msg.key == "radio" :
+                    msg.src = name 
+                    msg.dest = ""
+                    radio_msgs.append(msg.value)
+                elif msg.key == "radar" :
+                    radar_src_dist[name] = msg.value
+                    
+        for name in self.__oracle.objs.keys() :
+            self.__resp.add_msg(Message(dest = name, key = "radio", value = copy.copy(radio_msgs)))
+
+        for src, dist in radar_src_dist.items() :
+            obj = self.__oracle.objs.get(src, None) 
+            if obj is not None :
+                self.__resp.add_msg(Message(dest = src, key = "radar", value = self.__oracle.touch(obj.pos, dist)))
+            else :
+                self.__resp.add_msg(Message(dest = src, key = "radar", value = self.__oracle.touch((0, 0), dist)))
+            
         # later
 
         # run the physical engine and update the time recorded in the context
@@ -689,8 +727,9 @@ class Module(object) :
     def act(self, mem, resp) : # can directly access or modify "resp" - the response will be sent by the host agent
         pass
 
+    
 
-class BasicModule(Module) :
+class ObjectModule(Module) :
     def sense(self, reqt, mem) : 
         for msg in reqt.get_msgs(mem.read("name")) : 
             for prop in ["pos", "angle", "vel", "avel", "force", "color"] :
@@ -706,6 +745,36 @@ class BasicModule(Module) :
                 resp.add_msg(Message(key = prop, value = value))
 
 
+class RadioModule(Module) :
+    def sense(self, reqt, mem) : 
+        agent_name = mem.read("name")
+        for msg in reqt.get_msgs(agent_name) : 
+            if msg.key == "radio" :
+                mem.reg(key = "radio_in", value = msg.value)
+                self.mem.reg(key = "radio_in", value = msg.value)
+                break
+                
+    def act(self, mem, resp) : 
+        radio_msg = mem.read("radio_out", None)
+        if radio_msg is not None :
+            resp.add_msg(Message(key = "radio", value = radio_msg))
+
+
+class RadarModule(Module) :
+    def sense(self, reqt, mem) : 
+        agent_name = mem.read("name")
+        for msg in reqt.get_msgs(agent_name) : 
+            if msg.key == "radar" :
+                mem.reg(key = "radar_detect", value = msg.value)
+                self.mem.reg(key = "radar_detect", value = msg.value)
+                break
+                
+    def act(self, mem, resp) : 
+        radar_dist = mem.read("radar_dist", None)
+        if radar_dist is not None :
+            resp.add_msg(Message(key = "radar", value = radar_dist))
+
+
 class Agent(object) : 
     def __init__(self, name) : 
         self.__name = "" 
@@ -719,7 +788,7 @@ class Agent(object) :
         self.name = name
         self.config()
 
-    def config(self, mods = [BasicModule()]) :
+    def config(self, mods = [ObjectModule(), RadioModule(), RadarModule()]) :
         self.__mods = [] 
         # configure the modules for the agent 
         for mod in mods :
@@ -800,7 +869,6 @@ class Agent(object) :
         for i in range(len(m["_mods"])) :
             self.__mods[i].memo = m["_mods"][i]
 
-
     def add_mod(self, mod) :
         if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
             self.__mods.append(mod)
@@ -818,6 +886,54 @@ class Agent(object) :
 
         return self.__resp
     
+    def get_pos(self) :
+        return self.__mem.read("pos", None)
+
+    def get_angle(self) :
+        return self.__mem.read("angle", None)
+
+    def get_vel(self) :
+        return self.__mem.read("vel", None)
+
+    def apply_vel(self, vel) :
+        return self.__mem.reg(key = "vel", value = vel)
+
+    def get_avel(self) :
+        return self.__mem.read("avel", None)
+
+    def apply_avel(self, avel) :
+        return self.__mem.reg(key = "avel", value = avel)
+
+    def get_force(self) :
+        return self.__mem.read("force", None)
+
+    def apply_force(self, force) :
+        return self.__mem.reg(key = "force", value = force)
+
+    def get_color(self) :
+        return self.__mem.read("color", None)
+
+    def apply_color(self, color) :
+        return self.__mem.reg(key = "color", value = color)
+
+    def get_radio_in_msgs(self) :
+        return self.__mem.read("radio_in", [])
+    
+    def get_radio_out_msg(self) :
+        return self.__mem.read("radio_out", None)
+
+    def set_radio_out_msg(self, msg) :
+        self.__mem.reg("radio_out", msg)
+
+    def get_radar_detect(self) :
+        return self.__mem.read("radar_detect", [])
+
+    def get_radar_dist(self) :
+        return self.__mem.read("radar_dist", None)
+
+    def set_radar_dist(self, dist) :
+        return self.__mem.reg("radar_dist", dist)
+        
 
 class Shot(object) :
     def __init__(self) :
@@ -1440,7 +1556,8 @@ class Simulator(object) :
                     
                     focus_info_width = len(focus_info[-1])
                     for key, value in focus_agent.memo.items() :
-                        if len(key) > 0 and key[0] != "_" : # keep the memo internal by prefix it with single underscore, like _key
+                        if len(key) > 0 and key[0] != "_" and key != "name" : 
+                            # keep the memo internal by prefix it with single underscore, like _key
                             focus_info.append("{: <20}".format("%s:" % key) + "%s" % value)
                             focus_info_width = len(focus_info[-1])
                             
