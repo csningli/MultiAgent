@@ -691,7 +691,7 @@ class Module(object) :
 class BasicModule(Module) :
 
     def sense(self, reqt, mem) : 
-        for msg in reqt.get(mem.read("name"), []) : 
+        for msg in reqt.get_msgs(mem.read("name")) : 
             if msg.key == "pos" :
                 mem.reg(key = "pos", value = msg.value)
             elif msg.key == "angle" :
@@ -719,7 +719,8 @@ class Agent(object) :
         self.name = name
         self.config()
 
-    def config(self, mods = []) :
+    def config(self, mods = [BasicModule()]) :
+        self.__mods = [] 
         # configure the modules for the agent 
         for mod in mods :
             if check_attrs(mod, {"memo" : None, "sense" : None, "process" : None, "act" : None}) :
@@ -760,18 +761,24 @@ class Agent(object) :
         m = {
             "active" : str(self.active), # the memo will be show in the focus information if the key is not prefixed with _ 
             "group_num" : str(self.group_num), 
-            "pos" : str(self.__mem.read("pos")),
             "angle" : str(self.__mem.read("angle")),
-            "vel" : str(self.__mem.read("vel")),
             "avel" : str(self.__mem.read("avel")),
             "_mem" : self.__mem.content, 
             "_mods" : [], 
         }
+        
+        pos = self.__mem.read("pos")
+        if pos is not None :
+            m["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1]),
+
+        vel = self.__mem.read("vel")
+        if vel is not None :
+            m["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1]),
 
         # collect modules' memos
         
         for mod in self.__mods :
-            m[_mods].append(mod.memo) 
+            m["_mods"].append(mod.memo) 
             
         return m
 
@@ -782,7 +789,7 @@ class Agent(object) :
         
         self.active = bool(m["active"])
         self.group_num = int(m["group_num"])
-        self.__mem.cotent = m["_mem"]
+        self.__mem.content = m["_mem"]
         
         # distribute modules' memos
         
@@ -1152,6 +1159,7 @@ class Driver(object) :
         agents_to_die = self.__context.clear(dist)
         for name in agents_to_die :
             if name in self.__agents.keys() :
+                self.__agents[name].active = False
                 del(self.__agents[name])
 
     def handle_cmds(self, cmd_msgs) :
@@ -1421,9 +1429,9 @@ class Simulator(object) :
                     screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
                     y += 10
                 
-                if focus_agent is not None : # and focus_agent.active == True : 
+                if focus_agent is not None and focus_agent.active == True : 
                     focus_info = [
-                        "{: <20}".format("Name: ") + "%s" % focus_agent.name, 
+                        "{: <20}".format("name: ") + "%s" % focus_agent.name, 
                     ]
                     
                     focus_info_width = len(focus_info[-1])
