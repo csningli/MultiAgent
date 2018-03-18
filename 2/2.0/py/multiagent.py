@@ -332,7 +332,7 @@ class OracleSpace(Space) :
     def get_objs_at(self, c, d = 0, dist = ppdist_l2) : 
         objs = []
         if hasattr(c, "__len__") and len(c) > 1 : 
-            for (name, obj) in self.objs.items() : 
+            for name, obj in self.objs.items() : 
                 if dist(c, obj.pos) < d + obj.radius:
                     objs.append(obj)
         return objs 
@@ -340,7 +340,7 @@ class OracleSpace(Space) :
     def get_obts_at(self, c, d = 0, dist = pldist_l2) : 
         obts = []
         if hasattr(c, "__len__") and len(c) > 1 : 
-            for obt in self.obts : 
+            for name, obt in self.obts.items() : 
                 if dist(c, obt.start, obt.end) < d:
                     obts.append(obt)
         return obts
@@ -349,10 +349,11 @@ class OracleSpace(Space) :
         blocks = []
         for obj in self.get_objs_at(c, d) :
             l = ppdist_l2(obj.pos, c) 
-            x = obs.pos[0] - c[0]
-            y = obs.pos[1] - c[1]
-            x *= max(0, l - obj.radius)
-            y *= max(0, l - obj.radius)
+            x = obj.pos[0] - c[0]
+            y = obj.pos[1] - c[1]
+            if (abs(l) > 0.001) :
+                x *= max(0, l - obj.radius) / float(l)
+                y *= max(0, l - obj.radius) / float(l)
             blocks.append((x, y))
         for obt in self.get_obts_at(c, d) :
             diff = pldiff(c, obt.start, obt.end)
@@ -627,12 +628,10 @@ class Context(object) :
         for name, ms in msgs.items() :
             for msg in ms :
                 if msg.key == "radio" :
-                    msg.src = name 
-                    msg.dest = ""
                     radio_msgs.append(msg.value)
                 elif msg.key == "radar" :
                     radar_src_dist[name] = msg.value
-                    
+
         for name in self.__oracle.objs.keys() :
             self.__resp.add_msg(Message(dest = name, key = "radio", value = copy.copy(radio_msgs)))
 
@@ -706,94 +705,141 @@ class Module(object) :
     @property
     def mem(self) :
         return self.__mem 
+
+    @mem.setter
+    def mem(self, mem) :
+        self.__mem = mem
         
-    @property
-    def memo(self) :
-        m = {
-            "_mem" : self.__mem.content 
-        }
-        return m
-        
-    @memo.setter
-    def memo(self, m) :
-        self.__mem.content = m["_mem"]
-
-    def sense(self, reqt, mem) : # can directly access or modify "mem" - the request received by the host agent
+    def sense(self, reqt) : # can directly access or modify "mem" - the request received by the host agent
         pass
 
-    def process(self, mem) : # can directly access or modify "mem" - the memory of the host agent
+    def process(self) : # can directly access or modify "mem" - the memory of the host agent
         pass
 
-    def act(self, mem, resp) : # can directly access or modify "resp" - the response will be sent by the host agent
+    def act(self, resp) : # can directly access or modify "resp" - the response will be sent by the host agent
         pass
 
+    def get_pos(self) :
+        return self.__mem.read("pos", None)
+
+    def get_angle(self) :
+        return self.__mem.read("angle", None)
+
+    def get_vel(self) :
+        return self.__mem.read("vel", None)
+
+    def apply_vel(self, vel) :
+        self.__mem.reg(key = "vel", value = vel)
+
+    def get_avel(self) :
+        return self.__mem.read("avel", None)
+
+    def apply_avel(self, avel) :
+        self.__mem.reg(key = "avel", value = avel)
+
+    def get_force(self) :
+        return self.__mem.read("force", None)
+
+    def apply_force(self, force) :
+        self.__mem.reg(key = "force", value = force)
+
+    def get_color(self) :
+        return self.__mem.read("color", None)
+
+    def apply_color(self, color) :
+        self.__mem.reg(key = "color", value = color)
+
+    def get_radio_in_msgs(self) :
+        return self.__mem.read("radio_in", [])
     
+    def get_radio_out_msg(self) :
+        return self.__mem.read("radio_out", None)
+
+    def set_radio_out_msg(self, msg) :
+        self.__mem.reg("radio_out", msg)
+
+    def get_radar_detect(self) :
+        return self.__mem.read("radar_detect", [])
+
+    def get_radar_dist(self) :
+        return self.__mem.read("radar_dist", None)
+
+    def set_radar_dist(self, dist) :
+        self.__mem.reg("radar_dist", dist)
+
 
 class ObjectModule(Module) :
-    def sense(self, reqt, mem) : 
-        for msg in reqt.get_msgs(mem.read("name")) : 
+    def __init__(self) :
+        super(ObjectModule, self).__init__()
+        self.__buff = {}
+        
+    def sense(self, reqt) : 
+        for msg in reqt.get_msgs(self.mem.read("name", None)) : 
             for prop in ["pos", "angle", "vel", "avel", "force", "color"] :
                 if msg.key == prop :
-                    mem.reg(key = prop, value = msg.value)
                     self.mem.reg(key = prop, value = msg.value)
+                    self.__buff[prop] = msg.value
                     break
                 
-    def act(self, mem, resp) : 
+    def act(self, resp) : 
         for prop in ["vel", "avel", "force", "color"] :
-            value = mem.read(prop, None)
-            if value is not None and value != self.mem.read(prop, None) :
+            value = self.mem.read(prop, None)
+            if value is not None and value != self.__buff.get(prop, None) :
                 resp.add_msg(Message(key = prop, value = value))
 
 
 class RadioModule(Module) :
-    def sense(self, reqt, mem) : 
-        agent_name = mem.read("name")
+    def sense(self, reqt) : 
+        agent_name = self.mem.read("name", None)
         for msg in reqt.get_msgs(agent_name) : 
             if msg.key == "radio" :
-                mem.reg(key = "radio_in", value = msg.value)
                 self.mem.reg(key = "radio_in", value = msg.value)
-                break
+                break 
                 
-    def act(self, mem, resp) : 
-        radio_msg = mem.read("radio_out", None)
+    def act(self, resp) : 
+        radio_msg = self.mem.read("radio_out", None)
         if radio_msg is not None :
             resp.add_msg(Message(key = "radio", value = radio_msg))
 
 
 class RadarModule(Module) :
-    def sense(self, reqt, mem) : 
-        agent_name = mem.read("name")
+    def sense(self, reqt) : 
+        agent_name = self.mem.read("name", None)
         for msg in reqt.get_msgs(agent_name) : 
             if msg.key == "radar" :
-                mem.reg(key = "radar_detect", value = msg.value)
                 self.mem.reg(key = "radar_detect", value = msg.value)
                 break
                 
-    def act(self, mem, resp) : 
-        radar_dist = mem.read("radar_dist", None)
+    def act(self, resp) : 
+        radar_dist = self.mem.read("radar_dist", None)
         if radar_dist is not None :
             resp.add_msg(Message(key = "radar", value = radar_dist))
+        resp.add_msg(Message(key = "radar", value = 10))
 
 
 class Agent(object) : 
     def __init__(self, name) : 
         self.__name = "" 
-        self.__group_num = -1 
         self.__mem = Memory()
         self.__mods = []
         self.__reqt = None
         self.__resp = None
         self.__active = True
-        
         self.name = name
         self.config()
 
-    def config(self, mods = [ObjectModule(), RadioModule(), RadarModule()]) :
+    def config(self, mods = None) :
+        if mods is None : 
+            mods = [ObjectModule(),] # by default, only ObjectModule() is added. 
+            #mods = [ObjectModule(), RadioModule(), RadarModule()]
         self.__mods = [] 
+
         # configure the modules for the agent 
+        
         for mod in mods :
-            if check_attrs(mod, {"memo" : None, "sense" : None, "process" : None, "act" : None}) :
+            if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
                 self.__mods.append(mod)
+                mod.mem = self.__mem
     
     def info(self) :
         return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
@@ -816,28 +862,14 @@ class Agent(object) :
         self.__active = value 
 
     @property
-    def group_num(self) :
-        return self.__group_num
-
-    @group_num.setter
-    def group_num(self, num) :
-        self.__group_num = int(num)
-
-    @property
-    def mem(self) :
-        return self.__mem 
-
-    @property
     def memo(self) : # memo is in key-value dict.
         # pack own memo
         
         m = {
             "active" : str(self.active), # the memo will be show in the focus information if the key is not prefixed with _ 
-            "group_num" : str(self.group_num), 
             "angle" : str(self.__mem.read("angle")),
             "avel" : str(self.__mem.read("avel")),
-            "_mem" : self.__mem.content, 
-            "_mods" : [], 
+            "__mem" : self.__mem.content, 
         }
         
         pos = self.__mem.read("pos")
@@ -848,11 +880,10 @@ class Agent(object) :
         if vel is not None :
             m["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1]),
 
-        # collect modules' memos
-        
-        for mod in self.__mods :
-            m["_mods"].append(mod.memo) 
-            
+        force = self.__mem.read("force")
+        if force is not None :
+            m["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1]),
+
         return m
 
     @memo.setter
@@ -861,13 +892,7 @@ class Agent(object) :
         # unpack own memo
         
         self.active = bool(m["active"])
-        self.group_num = int(m["group_num"])
-        self.__mem.content = m["_mem"]
-        
-        # distribute modules' memos
-        
-        for i in range(len(m["_mods"])) :
-            self.__mods[i].memo = m["_mods"][i]
+        self.__mem.content = m["__mem"]
 
     def add_mod(self, mod) :
         if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
@@ -877,62 +902,17 @@ class Agent(object) :
         self.__reqt = reqt
         self.__resp = Response()
 
+        #print("handle", self.__name, self.__mods)
         for mod in self.__mods :
-            mod.sense(self.__reqt, self.__mem)
+            mod.sense(self.__reqt)
         for mod in self.__mods :
-            mod.process(self.__mem)
+            mod.process()
         for mod in self.__mods :
-            resp = mod.act(self.__mem, self.__resp)
+            resp = mod.act(self.__resp)
 
         return self.__resp
     
-    def get_pos(self) :
-        return self.__mem.read("pos", None)
-
-    def get_angle(self) :
-        return self.__mem.read("angle", None)
-
-    def get_vel(self) :
-        return self.__mem.read("vel", None)
-
-    def apply_vel(self, vel) :
-        return self.__mem.reg(key = "vel", value = vel)
-
-    def get_avel(self) :
-        return self.__mem.read("avel", None)
-
-    def apply_avel(self, avel) :
-        return self.__mem.reg(key = "avel", value = avel)
-
-    def get_force(self) :
-        return self.__mem.read("force", None)
-
-    def apply_force(self, force) :
-        return self.__mem.reg(key = "force", value = force)
-
-    def get_color(self) :
-        return self.__mem.read("color", None)
-
-    def apply_color(self, color) :
-        return self.__mem.reg(key = "color", value = color)
-
-    def get_radio_in_msgs(self) :
-        return self.__mem.read("radio_in", [])
     
-    def get_radio_out_msg(self) :
-        return self.__mem.read("radio_out", None)
-
-    def set_radio_out_msg(self, msg) :
-        self.__mem.reg("radio_out", msg)
-
-    def get_radar_detect(self) :
-        return self.__mem.read("radar_detect", [])
-
-    def get_radar_dist(self) :
-        return self.__mem.read("radar_dist", None)
-
-    def set_radar_dist(self, dist) :
-        return self.__mem.reg("radar_dist", dist)
         
 
 class Shot(object) :
@@ -1137,7 +1117,7 @@ class Schedule(object) :
         
         
 class Driver(object) : 
-    def __init__(self, context, schedule, data = None) : 
+    def __init__(self, context, schedule) : 
         if check_attrs(context, {"handle_reqt" : None}) :
             self.__context = context 
         else :
@@ -1152,16 +1132,7 @@ class Driver(object) :
             exit(1)
 
         self.__steps = 0
-        if data is not None :
-            if check_attrs(data, {"add_shot" : None, "get_shot" : None}) :
-                self.__data = data
-                self.__steps = data.get_steps()
-                self.restore() 
-            else :
-                print("Invalid data for the construction of driver. Exit.")
-                exit(1)
-        else : 
-            self.__data = Data()
+        self.__data = Data()
             
         self.__reqt = None
         self.__resp = None
@@ -1556,7 +1527,7 @@ class Simulator(object) :
                     
                     focus_info_width = len(focus_info[-1])
                     for key, value in focus_agent.memo.items() :
-                        if len(key) > 0 and key[0] != "_" and key != "name" : 
+                        if len(key) > 1 and key[0:2] != "__" and key != "name" : 
                             # keep the memo internal by prefix it with single underscore, like _key
                             focus_info.append("{: <20}".format("%s:" % key) + "%s" % value)
                             focus_info_width = len(focus_info[-1])

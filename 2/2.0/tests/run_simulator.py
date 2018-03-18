@@ -45,7 +45,7 @@ def run_sim(filename = None) :
     obj = Object(name = "1")
     obj.pos = (-10, 0)
     schedule.add_obj(obj, 30)
-    
+
     schedule.add_agent(agent = Agent(name = "1"), delay = 30)
 
     # create the driver
