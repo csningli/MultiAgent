@@ -518,6 +518,10 @@ class Context(object) :
         return "<<multiagent.%s has_oracle=%d>>" % (type(self).__name__, self.__oracle is not None)
 
     @property
+    def oracle(self) :
+        return self.__oracle
+
+    @property
     def time(self) :
         return self.__timer.read
 
@@ -651,6 +655,9 @@ class Context(object) :
         
         return self.__resp
 
+    def handle_cmd(self, cmd) :
+        pass
+
     def draw(self, screen) :
         self.__oracle.draw(screen)
 
@@ -677,7 +684,7 @@ class Context(object) :
 
     def clear(self, dist) :
         return self.__oracle.clear(dist)
-        
+
 
 class Memory(object) :
     def __init__(self) :
@@ -862,41 +869,56 @@ class Agent(object) :
         self.__active = value 
 
     @property
-    def memo(self) : # memo is in key-value dict.
-        # pack own memo
-        
-        m = {
-            "active" : str(self.active), # the memo will be show in the focus information if the key is not prefixed with _ 
+    def focus(self) :
+        focus_info = {
+            "cmd" : str(self.__mem.read("cmd")),
             "angle" : str(self.__mem.read("angle")),
             "avel" : str(self.__mem.read("avel")),
-            "__mem" : self.__mem.content, 
         }
         
         pos = self.__mem.read("pos")
         if pos is not None :
-            m["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1]),
+            focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1]),
 
         vel = self.__mem.read("vel")
         if vel is not None :
-            m["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1]),
+            focus_info["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1]),
 
         force = self.__mem.read("force")
         if force is not None :
-            m["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1]),
+            focus_info["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1]),
 
-        return m
+        return focus_info
 
-    @memo.setter
-    def memo(self, m) : 
-
-        # unpack own memo
+    @property
+    def mem(self) :
+        return self.__mem
         
-        self.active = bool(m["active"])
-        self.__mem.content = m["__mem"]
-
+    @property
+    def mods(self) :
+        return self.__mods
+    
     def add_mod(self, mod) :
         if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
             self.__mods.append(mod)
+
+    @property
+    def reqt(self) :
+        return self.__reqt
+
+    #@reqt.setter
+    #def reqt(self, r) :
+        #if check_attrs(r, {"add_msg" : None, "get_msgs" : None}) :
+            #self.__reqt = r
+
+    @property
+    def resp(self) :
+        return self.__resp
+
+    #@resp.setter
+    #def resp(self, r) :
+        #if check_attrs(r, {"add_msg" : None, "get_msgs" : None}) :
+            #self.__resp = r
 
     def handle_reqt(self, reqt) :
         self.__reqt = reqt
@@ -909,10 +931,24 @@ class Agent(object) :
             mod.process()
         for mod in self.__mods :
             resp = mod.act(self.__resp)
-
         return self.__resp
+
+    def handle_cmd(self, cmd) :
+        self.__mem.reg(key = "cmd", value = cmd) 
     
-    
+    @property
+    def memo(self) : # memo is in key-value dict.
+        m = {
+            "active" : str(self.active),             
+            "__mem" : self.__mem.content, # the memo will be show in the focus information if the key is not prefixed with __ 
+        }
+        return m
+
+    @memo.setter
+    def memo(self, m) : 
+        self.active = bool(m["active"])
+        self.__mem.content = m["__mem"]
+
         
 
 class Shot(object) :
@@ -993,7 +1029,8 @@ class Data(object) :
         if len(self.__data) > 0 :
             self.to_file()
         self.__filename = fn
-        self.from_file()
+        if self.__filename != "" :
+            self.from_file()
 
     def add_shot(self, shot) :
         if check_attrs(shot, {
@@ -1011,7 +1048,7 @@ class Data(object) :
     def to_file(self) :
         result = False
 
-        if self.__filename != None :
+        if self.__filename != None and self.__filename != "" :
             with open(self.__filename, 'w') as f : 
                 data = []
                 for shot in self.__data : 
@@ -1144,8 +1181,9 @@ class Driver(object) :
     @filename.setter
     def filename(self, fn = None) :
         self.__data.filename = fn
-        self.__steps = self.__data.size - 1
-        self.apply_shot(self.__data.get_shot(self.__steps))
+        if self.__data.size > 0 :
+            self.__steps = self.__data.size - 1
+            self.apply_shot(self.__data.get_shot(self.__steps))
 
         
     @property 
@@ -1329,6 +1367,87 @@ class Inspector(object) :
         return result   
 
 
+class CommandPack(object) :
+    def __init__(self, cmdStr = "") :
+        self.__pack = {
+            "target" : None,
+            "range" : [],
+            "guide" : "",  
+        }
+        if CommandPack.check(cmdStr) :
+            self.__pack = CommandPack.extract(cmdStr) 
+
+    @property 
+    def target(self) :
+        return self.__pack["target"]
+
+    @property 
+    def range(self) :
+        return self.__pack["range"]
+
+    @property 
+    def guide(self) :
+        return self.__pack["guide"]
+
+    def check(cls, cmdStr = "") :
+        result = True 
+        if len(cmdStr.split(';')) == 3 :
+            for term in cmdStr.split(';') :
+                if len(term.split(':')) == 2 and term.split(':')[0].strip() in ["tar", "ran", "gd"] :
+                    if term.split(':')[0].strip() == "tar" :
+                        if term.split(':')[1].strip() in ["agent", "cont"] :
+                            pass
+                        else :
+                            result = False
+                    elif term.split(':')[0].strip() == "ran" :
+                        for sub in term.split(':')[1].split(',') : 
+                            if '-' in sub :
+                                if sub.strip().replace('-', '0').isdigit() and len(sub.split('-')) == 2 :
+                                    pass
+                                else :
+                                    result = False
+                            else :
+                                if sub.strip().isdigit() :
+                                    pass
+                                else :
+                                    result = False
+                    elif term.split(':')[0].strip() == "gd" :
+                        pass
+                else :
+                    result = False
+                    break
+        else :
+            result = False
+        return result
+
+    def extract(cls, cmdStr = "") :
+        pack = {
+            "target" : None,
+            "range" : [],
+            "guide" : "",  
+        }
+        if self.check(cmdStr) :
+            for term in cmdStr.split(';') :
+                if term.split(':')[0].strip() == "tar" :
+                    pack["target"] = term.split(':')[1].strip()
+                elif term.split(':')[0].strip() == "ran" :
+                    for sub in term.split(':')[1].split(',') : 
+                        pack["range"].append(sub.strip())
+                elif term.split(':')[0].strip() == "gd" :
+                    pack["guide"] = term.split(':')[1].strip()
+        return pack
+
+    def compress(self) :
+        cmdStr = "target:%s;range:%s;guide:%s" % (self.target, ','.join(self.range), self.guide)
+        return cmdStr
+
+    def in_range(self, name = "") :
+        result = False
+        if name != "" :
+            pass
+        return result 
+
+
 class Commander(object) :
     __database = "./multiagent_commands.db"
 
@@ -1356,7 +1475,7 @@ class Commander(object) :
 
 
 class Simulator(object) : 
-    def __init__(self, driver, cmd = None, inspector = None) :
+    def __init__(self, driver, cmdr = None, inspector = None) :
         self.__driver = None
         if driver is not None and check_attrs(driver, {"go" : None, "back" : None, "handle_cmds" : None}) :
             self.__driver = driver 
@@ -1364,12 +1483,12 @@ class Simulator(object) :
             print("Invalid driver for the initialization of the simulator. Exit")
             exit(1)
             
-        self.__cmd = None
-        if cmd is None :
-            self.__cmd = Commander()
+        self.__cmdr = None
+        if cmdr is None :
+            self.__cmdr = Commander()
         else :
-            if check_attrs(cmd, {"check" : None,}) :
-                self.__cmd = cmd
+            if check_attrs(cmdr, {"check" : None,}) :
+                self.__cmdr = cmdr
             else :
                 print("Invalid commander for the initialization of the simulator. Create a new one.")
                 exit(1)
@@ -1380,11 +1499,10 @@ class Simulator(object) :
         else :
             print("Invalid inspector for the initialization of the simulator. Exit")
             exit(1)
-
+        
     def info(self) :
         return "<<multiagent.%s has_driver=%d>>" % (type(self).__name__, self.__driver is not None)
 
-        
     def simulate(self, inspector = None, width = 800, height = 800, limit = None, graphics = False, filename = None) :
         if self.__driver is None :
             print("No valid driver given. Return.")
@@ -1424,8 +1542,9 @@ class Simulator(object) :
 
         if filename is not None :
             self.__driver.filename = filename
-            pause = True
-            updated = True
+            if filename != "" :
+                pause = True
+                updated = True
         
         while (limit is None or self.__driver.steps < limit) and running :
             for event in pygame.event.get():
@@ -1496,7 +1615,7 @@ class Simulator(object) :
                     
                 updated = True
             else : 
-                msgs = self.__cmd.check()
+                msgs = self.__cmdr.check()
                 if len(msgs) > 0 :
                     cmd_msgs = msgs + cmd_msgs
                 updated = True
@@ -1510,9 +1629,9 @@ class Simulator(object) :
                 pygame.display.flip()
 
                 sim_info = [ 
-                    "{: <12}".format("Speed: ") + "%d" % speed, 
-                    "{: <12}".format("Steps: ") + "%d" % self.__driver.steps, 
-                    "{: <12}".format("Time: ") + "%2.4f" % self.__driver.context_time, 
+                    rfix_str_len("Speed:", 12, ':') + "%d" % speed,
+                    rfix_str_len("Steps:", 12, ':') + "%d" % self.__driver.steps, 
+                    rfix_str_len("Time:", 12, ':') + "%2.4f" % self.__driver.context_time, 
                 ]
                 
                 y = 5
@@ -1522,25 +1641,28 @@ class Simulator(object) :
                 
                 if focus_agent is not None and focus_agent.active == True : 
                     focus_info = [
-                        "{: <20}".format("name: ") + "%s" % focus_agent.name, 
+                        rfix_str_len("name:", 16, ':') + " " * 4 + rfix_str_len(str(focus_agent.name), 20), 
                     ]
                     
-                    focus_info_width = len(focus_info[-1])
-                    for key, value in focus_agent.memo.items() :
-                        if len(key) > 1 and key[0:2] != "__" and key != "name" : 
-                            # keep the memo internal by prefix it with single underscore, like _key
-                            focus_info.append("{: <20}".format("%s:" % key) + "%s" % value)
+                    focus_info_width = len(focus_info[0])
+                    for key, value in focus_agent.focus.items() :
+                        if len(key) > 1 : 
+                            focus_info.append(rfix_str_len("%s" % key + ":", 12, ':') + " " * 4 + rfix_str_len("%s" % value, 16))
                             focus_info_width = len(focus_info[-1])
                             
                     y = 5
                     for line in focus_info:
-                        screen.blit(font.render(line, 1, THECOLORS["black"]), (screen.get_width() - 6 * focus_info_width - 10, y))
+                        screen.blit(font.render(line, 1, THECOLORS["black"]), (screen.get_width() - 5.5 * focus_info_width - 10, y))
                         y += 10
 
                 if len(cmd_msgs) > 0 :
                     y = height - 20
-                    for msg in cmd_msgs :   
-                        screen.blit(font.render(msg, 1, THECOLORS["red"]), (screen.get_width() - 6 * len(msg) - 10 , y))
+                    for msg in cmd_msgs :  
+                        if len(msg) > 50 : 
+                            line = lfix_str_len(msg, 50)
+                        else :
+                            line = msg
+                        screen.blit(font.render(line, 1, THECOLORS["red"]), (screen.get_width() - 5.5 * len(line) - 10, y))
                         y -= 10
 
                 y = height - 20

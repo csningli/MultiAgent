@@ -82,3 +82,30 @@ def str2dict(s) :
             result[item.strip().split(':')[0]] = item.strip().split(':')[0]
     return result
         
+
+def rfix_str_len(s, l, ignore = '') :
+    fs = ""
+    if len(s) <= l :
+        fs = s + " " * (l - len(s))
+    else : 
+        if s[-1] == ignore and len(ignore) == 1 : 
+            fl = min(3, l - 1)
+            fs = s[:(l - fl)] + "." * fl + ignore
+        else :
+            fl = min(3, l)
+            fs = s[:(l -fl)] + "." * fl
+    return "{:<}".format(fs)
+    
+def lfix_str_len(s, l, ignore = "") :
+    fs = ""
+    if len(s) <= l :
+        fs = " " * (l - len(s)) + s
+    else : 
+        if s[-1] == ignore and len(ignore) == 1 : 
+            fl = min(3, l - 1)
+            fs = s[:(l - fl)] + "." * fl + ignore
+        else :
+            fl = min(3, l)
+            fs = s[:(l - fl)] + "." * fl
+    return "{:>}".format(fs)
+ 

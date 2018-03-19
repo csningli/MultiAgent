@@ -8,11 +8,11 @@ sys.path.append("../py")
 
 from console import *  
 
-class Command(MultiAgentCommand) :
+class CommandLine(MultiAgentCommandLine) :
     pass
 
 if __name__ == '__main__' :
-    c = Command()
+    c = CommandLine()
     c.run()
 
 

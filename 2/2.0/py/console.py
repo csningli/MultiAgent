@@ -3,11 +3,12 @@
 # copyright, 2018, NiL, csningli@gmail.com
 
 import sys, os, time, datetime, pickle, copy, readline, sqlite3
-from utils import * 
+#from utils import * 
+from multiagent import CommandPack
 
-class MultiAgentCommand :
+class MultiAgentCommandLine :
     __promote = "CMA"
-    __title = "Command for MultiAgent"
+    __title = "Command Line for MultiAgent"
     __copyright = "(c) copyright 2018, NiL, csningli@gmail.com"
     __database = "./multiagent_commands.db"
 
@@ -26,7 +27,7 @@ class MultiAgentCommand :
         cur = self.__con.cursor()    
         cur.execute("SELECT * from Commands ORDER BY timelabel LIMIT 10")
         for record in cur.fetchall() :  
-            readline.add_history("req " + record[1])
+            readline.add_history("req " + record[1].replace(';', ' '))
         
     def run(self) :
         print("%s | %s" % (self.__title, self.__copyright))
@@ -73,7 +74,7 @@ class MultiAgentCommand :
     
 
 if __name__ == '__main__' :
-    c = MultiAgentCommand()
+    c = MultiAgentCommandLine()
     c.run()
 
 
