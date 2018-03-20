@@ -3,7 +3,7 @@
 # copyright, 2018, NiL, csningli@gmail.com
 
 import sys, os, time, datetime, pickle, copy, readline, sqlite3
-#from utils import * 
+from utils import * 
 from multiagent import CommandPack
 
 class MultiAgentCommandLine :
@@ -70,7 +70,7 @@ class MultiAgentCommandLine :
             print("Invalid request: %s" % reqt)
 
     def validate(self, reqt) :
-        return True
+        return CommandPack.check(dict2str(reqt)) 
     
 
 if __name__ == '__main__' :
