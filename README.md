@@ -73,12 +73,3 @@ You can also remove the ".data" files inside an example from "examples/".
 	
 	(multiagent_1_0)[user @ examples] ./clear.sh patrol_car
 	
-# Versions
-
-## Vesion 1.0
-- Simulator.
-- Player.
-
-## Version 1.1
-- Unit tests in Pytest.
-
