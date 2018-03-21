@@ -1,6 +1,5 @@
 # MultiAgent 2
-To work with MultiAgent 2, you need to prepare with the selected version according 
-to the following instructions.
+To work with MultiAgent 2, you at first need to prepare the working environment according to the following instructions.
 
 # Environment
 ## Download Multiagent
