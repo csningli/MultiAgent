@@ -1,12 +1,11 @@
 import sys, os, time, datetime, json, math, inspect
+
 import pygame
 from pygame.locals import * 
 from pygame.color import *
 
 from numpy import array, dot 
 from numpy.linalg import norm
-
-from utils import distance_to_line
 
 from multiagent import Timer, Space, Aggregator, Context, Object, Module, ProcessModule, SensorModule, Logger, check_attrs
 

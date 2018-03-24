@@ -1,9 +1,9 @@
 name: multiagent2
 dependencies:
-- python = 2.7
+- python = 3.6
 - pip >= 9
 - numpy
 - scipy
 - pip:
-  - pygame == 1.9.2
-  - pymunk == 5.1.0
+  - pygame == 1.9.3
+  - pymunk == 5.3.2
