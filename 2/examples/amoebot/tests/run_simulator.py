@@ -36,7 +36,7 @@ def run_sim(filename = None) :
    
     # add an agent to existing object
 
-    #schedule.add_agent(Agent(name = "0"))
+    schedule.add_agent(Agent(name = "0"))
 
     # add a new object and an new agent accordingly 
 

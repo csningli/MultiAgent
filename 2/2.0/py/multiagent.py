@@ -1671,7 +1671,7 @@ class Simulator(object) :
                 sim_info = [ 
                     rfix_str_len("Speed:", 12, ':') + "%d" % speed,
                     rfix_str_len("Steps:", 12, ':') + "%d" % self.__driver.steps, 
-                    rfix_str_len("Time:", 12, ':') + "%2.4f" % self.__driver.context_time, 
+                    rfix_str_len("Time:", 12, ':') + "%.3f" % self.__driver.context_time, 
                 ]
                 
                 y = 5
