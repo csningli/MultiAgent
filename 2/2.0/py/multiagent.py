@@ -1350,19 +1350,16 @@ class Driver(object) :
     def export(self) :
         self.__data.to_file()
 
-    def get_focus_obj(self, pos) :
-        obj = None
-        objs = self.__context.get_objs_at(pos) 
-        if len(objs) > 0 :
-            obj = objs[0]
-        return obj
+    def get_focus_objs(self, pos) :
+        return self.__context.get_objs_at(pos) 
 
-    def get_focus_agent(self, pos) :
-        agent = None
-        obj = self.get_focus_obj(pos)
-        if obj is not None and obj.name in self.__agents.keys() : 
-            agent = self.__agents[obj.name]
-        return agent
+    def get_focus_agents(self, pos) :
+        agents = [] 
+        objs = self.__context.get_objs_at(pos)
+        for obj in objs :
+            if obj is not None and obj.name in self.__agents.keys() : 
+                agents.append(self.__agents[obj.name])
+        return agents
 
 
 class Inspector(object) : 
@@ -1575,7 +1572,7 @@ class Simulator(object) :
         updated = False
 
         focus_info = []
-        focus_agent = None
+        focus_agents = []
 
         cmd_msgs = []
 
@@ -1624,7 +1621,7 @@ class Simulator(object) :
                 delay = 10
             elif screen is not None and pause == True and pygame.mouse.get_pressed()[0] == True :
                 p = pygame.mouse.get_pos()
-                focus_agent = self.__driver.get_focus_agent((int(p[0] - screen.get_width()/2.0), int(screen.get_height()/2.0 - p[1])))
+                focus_agents = self.__driver.get_focus_agents((int(p[0] - screen.get_width()/2.0), int(screen.get_height()/2.0 - p[1])))
                 updated = True
 
             clock.tick(1 / self.__driver.context_timer_delta)
@@ -1679,21 +1676,22 @@ class Simulator(object) :
                     screen.blit(font.render(line, 1, THECOLORS["black"]), (5, y))
                     y += 10
                 
-                if focus_agent is not None and focus_agent.active == True : 
-                    focus_info = [
-                        rfix_str_len("name:", 16, ':') + " " * 4 + rfix_str_len(str(focus_agent.name), 20), 
-                    ]
-                    
-                    focus_info_width = len(focus_info[0])
-                    for key, value in focus_agent.focus.items() :
-                        if len(key) > 1 : 
-                            focus_info.append(rfix_str_len("%s" % key + ":", 12, ':') + " " * 4 + rfix_str_len("%s" % value, 16))
-                            focus_info_width = len(focus_info[-1])
-                            
-                    y = 5
-                    for line in focus_info:
-                        screen.blit(font.render(line, 1, THECOLORS["black"]), (screen.get_width() - 5.5 * focus_info_width - 10, y))
-                        y += 10
+                y = 5
+                for focus_agent in focus_agents :
+                    if focus_agent.active == True :
+                        focus_info = [
+                            rfix_str_len("name:", 16, ':') + " " * 4 + rfix_str_len(str(focus_agent.name), 20), 
+                        ]
+                        focus_info_width = len(focus_info[0])
+                        for key, value in focus_agent.focus.items() :
+                            if len(key) > 1 : 
+                                focus_info.append(rfix_str_len("%s" % key + ":", 12, ':') + " " * 4 + rfix_str_len("%s" % value, 16))
+                                focus_info_width = len(focus_info[-1])
+                        focus_info.append("")
+                        
+                        for line in focus_info:
+                            screen.blit(font.render(line, 1, THECOLORS["black"]), (screen.get_width() - 5.5 * focus_info_width - 10, y))
+                            y += 10
 
                 if len(cmd_msgs) > 0 :
                     y = height - 20
