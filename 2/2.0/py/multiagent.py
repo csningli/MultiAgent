@@ -821,7 +821,6 @@ class RadarModule(Module) :
             resp.add_msg(Message(key = "radar", value = radar_dist))
         resp.add_msg(Message(key = "radar", value = 10))
 
-
 class Agent(object) : 
     def __init__(self, name) : 
         self.__name = "" 
