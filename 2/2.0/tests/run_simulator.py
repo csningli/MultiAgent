@@ -50,7 +50,7 @@ def run_sim(filename = None) :
 
     # create the driver
 
-    driver = Driver(context = context, schedule = schedule, use_threads = True)
+    driver = Driver(context = context, schedule = schedule)
 
     # create the inspector
 

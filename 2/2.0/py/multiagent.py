@@ -2,7 +2,7 @@
 # MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3, threading
+import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3
 
 from numpy import array, dot
 from numpy.linalg import norm
@@ -1149,15 +1149,8 @@ class Schedule(object) :
 
         return item
 
-
-def agent_handle_reqt(agent, reqt, resps, lock) :
-    lock.acquire()
-    resps[agent.name] = agent.handle_reqt(reqt)
-    lock.release()
-
-
 class Driver(object) :
-    def __init__(self, context, schedule, use_threads = False) :
+    def __init__(self, context, schedule) :
         if check_attrs(context, {"handle_reqt" : None, "handle_cmds" : None}) :
             self.__context = context
         else :
@@ -1170,10 +1163,6 @@ class Driver(object) :
         else :
             print("Invalid schedule for the construction of driver. Exit.")
             exit(1)
-
-        self.__lock = None
-        if use_threads :
-            self.__lock = threading.Lock()
 
         self.__steps = 0
         self.__data = Data()
@@ -1274,27 +1263,12 @@ class Driver(object) :
                         reqt.add_msg(msg)
                 reqts[name] = reqt
 
-            if self.__lock is None :
-                for name, reqt in reqts.items() :
-                    resp = self.__agents[name].handle_reqt(reqt)
-                    msgs = resp.get_msgs("")
-                    for msg in msgs :
-                        msg.src = name
-                        self.__reqt.add_msg(msg)
-            else :
-                resps = {}
-                threads = []
-                for name, reqt in reqts.items() :
-                    t = threading.Thread(target = agent_handle_reqt, args = (self.__agents[name], reqt, resps, self.__lock))
-                    threads.append(t)
-                    t.start()
-                for t in threads :
-                    t.join()
-                for name, resp in resps.items() :
-                    msgs = resp.get_msgs("")
-                    for msg in msgs :
-                        msg.src = name
-                        self.__reqt.add_msg(msg)
+            for name, reqt in reqts.items() :
+                resp = self.__agents[name].handle_reqt(reqt)
+                msgs = resp.get_msgs("")
+                for msg in msgs :
+                    msg.src = name
+                    self.__reqt.add_msg(msg)
 
             # get response from context's handling result
 
