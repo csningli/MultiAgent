@@ -21,5 +21,4 @@ def test_msg() :
 if __name__ == '__main__' :
     result = doctest.testmod()
     print("-" * 50)
-    
     print("[Message Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))
