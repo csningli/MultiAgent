@@ -42,8 +42,18 @@ def xy_to_pq(b) :
     a[1] = q
     return a
 
+# share the memory among all the agents
+shared_memory = {}
 
 class AmoeObject(Object) :
+    @property
+    def amoe_pos(self) :
+        return xy_to_pq(self.pos)
+
+    @amoe_pos.setter
+    def amoe_pos(self, pos) :
+        self.pos = pq_to_xy(pos)
+
     def draw(self, screen) :
         if self.visible == True :
             p = Vec2d(self.pos)
@@ -62,6 +72,10 @@ class AmoeObject(Object) :
 
 
 class AmoeOracleSpace(OracleSpace) :
+    def __init__(self, objs = [], obts = []) :
+        super(AmoeOracleSpace, self).__init__(objs, obts)
+        self.__objs_indexing = {}
+
     def add_obj(self, obj) :
         if check_attrs(obj, {
                 "body" : None,
@@ -74,6 +88,9 @@ class AmoeOracleSpace(OracleSpace) :
                 #"force" : None,
             }) and obj.name not in self.objs.keys() :
             self.objs[obj.name] = obj
+            if obj.amoe_pos not in self.__objs_indexing.keys() :
+                self.__objs_indexing[obj.amoe_pos] = []
+            self.__objs_indexing[obj.amoe_pos].append(obj.name)
 
     def add_obt(self, obt) :
         if check_attrs(obt, {
@@ -84,6 +101,20 @@ class AmoeOracleSpace(OracleSpace) :
             }) and obt.name not in self.obts.keys() :
             self.obts[obt.name] = obt
 
+    def move_amoe_obj(self, name, amoe_pos) :
+        if name in self.objs.keys() :
+            obj = self.objs[name]
+            if obj.amoe_pos in self.__objs_indexing.keys() :
+                if name in self.__objs_indexing[obj.amoe_pos] :
+                    del(self.__objs_indexing[obj.amoe_pos].index(name))
+            obj.amoe_pos = amoe_pos
+            if amoe_pos not in self.__objs_indexing.keys() :
+                self.__objs_indexing[amoe_pos] = []
+            self.__objs_indexing[amoe_pos].append(name)
+
+    def objs_at_amoe_pos(self, amoe_pos) :
+        return self.__objs_indexing.get(amoe_pos, [])
+
     def draw(self, screen) :
         # draw objs
 
@@ -92,10 +123,41 @@ class AmoeOracleSpace(OracleSpace) :
 
         # draw connection between the coupled objects
 
-        # later
+        for i in range(len(self.objs)) :
+            head = self.objs[str(2 * i)]
+            tail = self.objs[str(2 * i + 1)]
+            if head.amoe_pos != tail.amoe_pos :
+                head_draw = [int(round(width / 2.0 + head.pos[0])), int(round(height / 2.0 - head.pos[1]))]
+                tail_draw = [int(round(width / 2.0 + tail.pos[0])), int(round(height / 2.0 - tail.pos[1]))]
+                pygame.draw.line(screen, self.stroke_color, head_draw, tail_draw, 4)
 
 
 class AmoeContext(Context) :
+    def handle_reqt(self, reqt) :
+        resp = super(AmoeContext, self).handle_reqt(reqt)
+
+        msgs = {}
+        for msg in self.reqt.get_msgs(dest = "") :
+            if msg.src not in msgs.keys() :
+                msgs[msg.src] = []
+            msgs[msg.src].append(msg)
+
+        for i in range(len(self.objs)) :
+            head = self.objs[str(2 * i)]
+            tail = self.objs[str(2 * i + 1)]
+            for msg in msgs.get(head.name, []) :
+                if msg.key == "expand" :
+                    if head.amoe_pos == tail.amoe_pos and len(self.oracle.objs_at_amoe_pos(msg.value)) < 1:
+                        self.oracle.move_amoe_obj(head.name, (head.amoe_pos[0] + msg.value[0], head.amoe_pos[1] + msg.value[1]))
+                elif msg.key == "contract" :
+                    if msg.value == "head" :
+                        self.oracle.move_amoe_obj(tail.name, head.amoe_pos)
+                    else if msg.value == "tail" :
+                        self.oracle.move_amoe_obj(head.name, tail.amoe_pos)
+            self.__resp.add_msg(Message(dest = head.name, key = "amoe_pos", value = head.amoe_pos))
+            self.__resp.add_msg(Message(dest = tail.name, key = "amoe_pos", value = tail.amoe_pos))
+        return self.resp
+
     def draw(self, screen) :
         (width, height) = screen.get_size()
 
@@ -187,15 +249,29 @@ def run_sim(filename = None) :
 
     # add objects and agents to the context
 
-    for i in range(1) : # the (2 * i)-th object is coupled with the (2 * i + 1)-th object, i.e. 0 is coupled with 1, 4 is coupled with 5.
-        obj = AmoeObject(name = str(2 * i))
-        obj.pos = (0, 0)
-        context.add_obj(obj)
-        schedule.add_agent(Agent(name = str(2 * i)))
-        obj = AmoeObject(name = str(2 * i + 1))
-        obj.pos = (0, 0)
-        context.add_obj(obj)
-        schedule.add_agent(Agent(name = str(2 * i + 1)))
+    row = 3
+    col = 3
+    for i in range(col) :
+        for j in range(row) :
+            k = i * row + j
+            # the (2 * k)-th object is coupled with the (2 * k + 1)-th object, i.e. 0 is coupled with 1, 4 is coupled with 5.
+
+            amoe_pos = (4 * i - 2 * (col - 1), 4 * j - 2 * (row - 1))
+            obj = AmoeObject(name = str(2 * k))
+            obj.amoe_pos = amoe_pos
+            context.add_obj(obj)
+            schedule.add_agent(Agent(name = str(2 * k)))
+
+            obj = AmoeObject(name = str(2 * k + 1))
+            obj.amoe_pos = amoe_pos
+            context.add_obj(obj)
+            schedule.add_agent(Agent(name = str(2 * k + 1)))
+
+            # initialize the shared memory
+            shared_memory[k] = Memory()
+            shared_memory[k].reg("state", "contracted")  # contracted / expanded
+            shared_memory[k].reg("head_pos", amoe_pos) # the amoe pos of (2 * i)-th object
+            shared_memory[k].reg("tail_pos", amoe_pos) # the amoe pos of (2 * i + 1)-th object
 
     # create the driver
 
@@ -212,11 +288,8 @@ def run_sim(filename = None) :
     print("Simulating")
     sim.simulate(graphics = True, inspector = inspector, filename = filename)
 
-
-
 if __name__ == '__main__' :
     filename = None
     if (len(sys.argv) > 1) :
         filename = sys.argv[1]
-    print("ok")
     run_sim(filename)

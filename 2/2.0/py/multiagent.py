@@ -2,8 +2,8 @@
 # MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
+# import sys modules
 import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3
-
 from numpy import array, dot
 from numpy.linalg import norm
 
@@ -517,9 +517,18 @@ class Context(object) :
     def info(self) :
         return "<<multiagent.%s has_oracle=%d>>" % (type(self).__name__, self.__oracle is not None)
 
+
     @property
     def oracle(self) :
         return self.__oracle
+
+    @property
+    def reqt(self) :
+        return self.__reqt
+
+    @property
+    def resp(self) :
+        return self.__resp
 
     @property
     def time(self) :
