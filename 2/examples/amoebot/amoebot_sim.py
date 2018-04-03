@@ -3,7 +3,8 @@
 # MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-import sys
+import sys, random, datetime
+random.seed(datetime.datetime.now())
 
 sys.path.append("../../2.0/py")
 
@@ -152,10 +153,20 @@ class AmoeContext(Context) :
                 elif msg.key == "contract" :
                     if msg.value == "head" :
                         self.oracle.move_amoe_obj(tail.name, head.amoe_pos)
-                    else if msg.value == "tail" :
+                    elif msg.value == "tail" :
                         self.oracle.move_amoe_obj(head.name, tail.amoe_pos)
-            self.__resp.add_msg(Message(dest = head.name, key = "amoe_pos", value = head.amoe_pos))
-            self.__resp.add_msg(Message(dest = tail.name, key = "amoe_pos", value = tail.amoe_pos))
+            self.__resp.add_msg(Message(dest = head.name, key = "head_amoe_pos", value = head.amoe_pos))
+            self.__resp.add_msg(Message(dest = head.name, key = "tail_amoe_pos", value = tail.amoe_pos))
+            head_detect = []
+            tail_detect = []
+            for port in [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)] :
+                if len(self.oracle.objs_at_amoe_pos((head.amoe_pos[0] + port[0], head.amoe_pos[1] + port[1]))) > 0 :
+                    head_detect.append(port)
+                if len(self.oracle.objs_at_amoe_pos((tail.amoe_pos[0] + port[0], tail.amoe_pos[1] + port[1]))) > 0 :
+                    tail_detect.append(port)
+            self.__resp.add_msg(Message(dest = head.name, key = "head_detect", value = head_detect))
+            self.__resp.add_msg(Message(dest = head.name, key = "tail_detect", value = tail_detect))
+
         return self.resp
 
     def draw(self, screen) :
@@ -229,6 +240,51 @@ class AmoeContext(Context) :
 
         super(AmoeContext, self).draw(screen)
 
+class AmoeDetectModule(Module) :
+    def sense(self, reqt) :
+        agent_name = self.mem.read("name", None)
+        for msg in reqt.get_msgs(agent_name) :
+            if msg.key == "head_amoe_pos" :
+                self.mem.reg(key = "head_amoe_pos", value = msg.value)
+            elif msg.key == "tail_amoe_pos" :
+                self.mem.reg(key = "tail_amoe_pos", value = msg.value)
+            elif msg.key == "head_detect" :
+                self.mem.reg(key = "head_detect", value = msg.value)
+            elif msg.key == "tail_detect" :
+                self.mem.reg(key = "tail_detect", value = msg.value)
+
+class AmoeMoveModule(Module) :
+    def act(self, resp) :
+        contract_value = self.mem.read("contract", None)
+        if contract_value is not None and contract_value in ["head", "tail"]:
+            resp.add_msg(Message(key = "contract", value = contract_value))
+        else :
+            expand_value = self.mem.read("expand", None)
+            if expand_value is not None and check_attrs(expand_value, {"__getitem__" : None, "__len__" : None}) and len(expand_value) >= 2 :
+                resp.add_msg(Message(key = "expand", value = expand_value))
+
+class AmoeProcessModule(Module) :
+    def process(self) :
+        agent_name = self.mem.read("name", None)
+        head_amoe_pos = self.mem.read("head_amoe_pos", None)
+        tail_amoe_pos = self.mem.read("tail_amoe_pos", None)
+        head_detect = self.mem.read("head_detect", None)
+        tail_detect = self.mem.read("tail_detect", None)
+
+        head_ports = [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)]
+        for port in head_detect :
+            if port in head_ports :
+                del(head_ports[head_ports.index(port)])
+        if head_amoe_pos == tail_amoe_pos :
+            if len(head_ports) > 0 :
+                if random.random() < 0.5 :
+                    self.mem.reg(key = "expand", value = random.choice(head_ports))
+        else :
+            if random.random() < 0.5 :
+                self.mem.reg(key = "contract", value = "head")
+            else :
+                self.mem.reg(key = "contract", value = "tail")
+
 
 def run_sim(filename = None) :
     '''
@@ -255,12 +311,12 @@ def run_sim(filename = None) :
         for j in range(row) :
             k = i * row + j
             # the (2 * k)-th object is coupled with the (2 * k + 1)-th object, i.e. 0 is coupled with 1, 4 is coupled with 5.
-
             amoe_pos = (4 * i - 2 * (col - 1), 4 * j - 2 * (row - 1))
+
             obj = AmoeObject(name = str(2 * k))
             obj.amoe_pos = amoe_pos
             context.add_obj(obj)
-            schedule.add_agent(Agent(name = str(2 * k)))
+            schedule.add_agent(Agent(name = str(2 * k), mods = [AmoeDetectModule, AmoeMoveModule, AmoeProcessModule]))
 
             obj = AmoeObject(name = str(2 * k + 1))
             obj.amoe_pos = amoe_pos

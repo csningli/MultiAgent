@@ -717,7 +717,7 @@ class Module(object) :
         self.__mem = Memory()
 
     @property
-    def mem(self) :
+    def mem(self) : # module's memory will be set with the memory of the host agent. 
         return self.__mem
 
     @mem.setter
@@ -831,7 +831,7 @@ class RadarModule(Module) :
         resp.add_msg(Message(key = "radar", value = 10))
 
 class Agent(object) :
-    def __init__(self, name) :
+    def __init__(self, name, mods = None) :
         self.__name = ""
         self.__mem = Memory()
         self.__mods = []
@@ -839,7 +839,7 @@ class Agent(object) :
         self.__resp = None
         self.__active = True
         self.name = name
-        self.config()
+        self.config(mods = mods)
 
     def config(self, mods = None) :
         if mods is None :
@@ -849,10 +849,11 @@ class Agent(object) :
 
         # configure the modules for the agent
 
-        for mod in mods :
-            if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
-                self.__mods.append(mod)
-                mod.mem = self.__mem
+        if check_attrs(mods, {"__iter__", None}) :
+            for mod in mods :
+                if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
+                    self.__mods.append(mod)
+                    mod.mem = self.__mem
 
     def info(self) :
         return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
