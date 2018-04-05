@@ -3,7 +3,7 @@
 # MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-import sys, random, datetime
+import sys, random, datetime, math
 random.seed(datetime.datetime.now())
 
 sys.path.append("../../2.0/py")
@@ -38,7 +38,7 @@ def xy_to_pq(b) :
     x = b[0]
     y = b[1]
     q = int(float(y) / (2 * amoebot_radius *  math.cos(math.pi / 6.0)))
-    p = int((float(x) -  2 * amoebot_radius *  math.cos(math.pi / 3.0) * q) / (2 * amoebot_radius)) - q
+    p = int((float(x) -  2 * amoebot_radius *  math.cos(math.pi / 3.0) * q) / (2 * amoebot_radius))
     a[0] = p
     a[1] = q
     return a
@@ -89,9 +89,9 @@ class AmoeOracleSpace(OracleSpace) :
                 #"force" : None,
             }) and obj.name not in self.objs.keys() :
             self.objs[obj.name] = obj
-            if obj.amoe_pos not in self.__objs_indexing.keys() :
-                self.__objs_indexing[obj.amoe_pos] = []
-            self.__objs_indexing[obj.amoe_pos].append(obj.name)
+            if str(obj.amoe_pos) not in self.__objs_indexing.keys() :
+                self.__objs_indexing[str(obj.amoe_pos)] = []
+            self.__objs_indexing[str(obj.amoe_pos)].append(obj.name)
 
     def add_obt(self, obt) :
         if check_attrs(obt, {
@@ -105,32 +105,34 @@ class AmoeOracleSpace(OracleSpace) :
     def move_amoe_obj(self, name, amoe_pos) :
         if name in self.objs.keys() :
             obj = self.objs[name]
-            if obj.amoe_pos in self.__objs_indexing.keys() :
-                if name in self.__objs_indexing[obj.amoe_pos] :
-                    del(self.__objs_indexing[obj.amoe_pos].index(name))
+            if str(obj.amoe_pos) in self.__objs_indexing.keys() :
+                if name in self.__objs_indexing[str(obj.amoe_pos)] :
+                    index = self.__objs_indexing[str(obj.amoe_pos)].index(name)
+                    del(self.__objs_indexing[str(obj.amoe_pos)][index])
             obj.amoe_pos = amoe_pos
-            if amoe_pos not in self.__objs_indexing.keys() :
-                self.__objs_indexing[amoe_pos] = []
-            self.__objs_indexing[amoe_pos].append(name)
+            if str(amoe_pos) not in self.__objs_indexing.keys() :
+                self.__objs_indexing[str(amoe_pos)] = []
+            self.__objs_indexing[str(amoe_pos)].append(name)
 
     def objs_at_amoe_pos(self, amoe_pos) :
-        return self.__objs_indexing.get(amoe_pos, [])
+        return self.__objs_indexing.get(str(amoe_pos), [])
 
     def draw(self, screen) :
         # draw objs
 
-        for obj in self.objs.values() + self.obts.values() :
+        for obj in self.objs.values() :
             obj.draw(screen)
 
         # draw connection between the coupled objects
 
-        for i in range(len(self.objs)) :
+        (width, height) = screen.get_size()
+        for i in range(int(math.floor(len(self.objs) / 2.0))) :
             head = self.objs[str(2 * i)]
             tail = self.objs[str(2 * i + 1)]
-            if head.amoe_pos != tail.amoe_pos :
+            if (head.amoe_pos != tail.amoe_pos).any() :
                 head_draw = [int(round(width / 2.0 + head.pos[0])), int(round(height / 2.0 - head.pos[1]))]
                 tail_draw = [int(round(width / 2.0 + tail.pos[0])), int(round(height / 2.0 - tail.pos[1]))]
-                pygame.draw.line(screen, self.stroke_color, head_draw, tail_draw, 4)
+                pygame.draw.line(screen, head.stroke_color, head_draw, tail_draw, 4)
 
 
 class AmoeContext(Context) :
@@ -143,29 +145,31 @@ class AmoeContext(Context) :
                 msgs[msg.src] = []
             msgs[msg.src].append(msg)
 
-        for i in range(len(self.objs)) :
-            head = self.objs[str(2 * i)]
-            tail = self.objs[str(2 * i + 1)]
+        for i in range(int(math.floor(len(self.oracle.objs)/2.0))) :
+            head = self.oracle.objs[str(2 * i)]
+            tail = self.oracle.objs[str(2 * i + 1)]
             for msg in msgs.get(head.name, []) :
+                # print(msg.key, msg.value, head.amoe_pos, tail.amoe_pos)
                 if msg.key == "expand" :
-                    if head.amoe_pos == tail.amoe_pos and len(self.oracle.objs_at_amoe_pos(msg.value)) < 1:
-                        self.oracle.move_amoe_obj(head.name, (head.amoe_pos[0] + msg.value[0], head.amoe_pos[1] + msg.value[1]))
+                    if (head.amoe_pos == tail.amoe_pos).all() and len(self.oracle.objs_at_amoe_pos(head.amoe_pos + msg.value)) < 1:
+                        self.oracle.move_amoe_obj(head.name, head.amoe_pos + msg.value)
                 elif msg.key == "contract" :
                     if msg.value == "head" :
                         self.oracle.move_amoe_obj(tail.name, head.amoe_pos)
                     elif msg.value == "tail" :
                         self.oracle.move_amoe_obj(head.name, tail.amoe_pos)
-            self.__resp.add_msg(Message(dest = head.name, key = "head_amoe_pos", value = head.amoe_pos))
-            self.__resp.add_msg(Message(dest = head.name, key = "tail_amoe_pos", value = tail.amoe_pos))
+                # print(head.amoe_pos, tail.amoe_pos)
+            self.resp.add_msg(Message(dest = head.name, key = "head_amoe_pos", value = head.amoe_pos))
+            self.resp.add_msg(Message(dest = head.name, key = "tail_amoe_pos", value = tail.amoe_pos))
             head_detect = []
             tail_detect = []
             for port in [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)] :
-                if len(self.oracle.objs_at_amoe_pos((head.amoe_pos[0] + port[0], head.amoe_pos[1] + port[1]))) > 0 :
+                if len(self.oracle.objs_at_amoe_pos(head.amoe_pos + port)) > 0 :
                     head_detect.append(port)
-                if len(self.oracle.objs_at_amoe_pos((tail.amoe_pos[0] + port[0], tail.amoe_pos[1] + port[1]))) > 0 :
+                if len(self.oracle.objs_at_amoe_pos(tail.amoe_pos + port)) > 0 :
                     tail_detect.append(port)
-            self.__resp.add_msg(Message(dest = head.name, key = "head_detect", value = head_detect))
-            self.__resp.add_msg(Message(dest = head.name, key = "tail_detect", value = tail_detect))
+            self.resp.add_msg(Message(dest = head.name, key = "head_detect", value = head_detect))
+            self.resp.add_msg(Message(dest = head.name, key = "tail_detect", value = tail_detect))
 
         return self.resp
 
@@ -240,6 +244,7 @@ class AmoeContext(Context) :
 
         super(AmoeContext, self).draw(screen)
 
+
 class AmoeDetectModule(Module) :
     def sense(self, reqt) :
         agent_name = self.mem.read("name", None)
@@ -252,6 +257,9 @@ class AmoeDetectModule(Module) :
                 self.mem.reg(key = "head_detect", value = msg.value)
             elif msg.key == "tail_detect" :
                 self.mem.reg(key = "tail_detect", value = msg.value)
+        # print("head_detect", self.mem.read("head_detect"))
+        # print("tail_detect", self.mem.read("tail_detect"))
+
 
 class AmoeMoveModule(Module) :
     def act(self, resp) :
@@ -262,28 +270,48 @@ class AmoeMoveModule(Module) :
             expand_value = self.mem.read("expand", None)
             if expand_value is not None and check_attrs(expand_value, {"__getitem__" : None, "__len__" : None}) and len(expand_value) >= 2 :
                 resp.add_msg(Message(key = "expand", value = expand_value))
+        self.mem.reg("contract", None)
+        self.mem.reg("expand", None)
 
 class AmoeProcessModule(Module) :
     def process(self) :
         agent_name = self.mem.read("name", None)
         head_amoe_pos = self.mem.read("head_amoe_pos", None)
         tail_amoe_pos = self.mem.read("tail_amoe_pos", None)
-        head_detect = self.mem.read("head_detect", None)
-        tail_detect = self.mem.read("tail_detect", None)
+        head_detect = self.mem.read("head_detect", [])
+        tail_detect = self.mem.read("tail_detect", [])
 
-        head_ports = [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)]
-        for port in head_detect :
-            if port in head_ports :
-                del(head_ports[head_ports.index(port)])
-        if head_amoe_pos == tail_amoe_pos :
-            if len(head_ports) > 0 :
-                if random.random() < 0.5 :
-                    self.mem.reg(key = "expand", value = random.choice(head_ports))
-        else :
-            if random.random() < 0.5 :
-                self.mem.reg(key = "contract", value = "head")
+        if head_amoe_pos is not None and tail_amoe_pos is not None :
+            head_ports = [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)]
+            for port in head_detect :
+                if port in head_ports :
+                    del(head_ports[head_ports.index(port)])
+            if (head_amoe_pos == tail_amoe_pos).all() :
+                if len(head_ports) > 0 :
+                    if random.random() < 0.5 :
+                        self.mem.reg(key = "expand", value = random.choice(head_ports))
             else :
-                self.mem.reg(key = "contract", value = "tail")
+                if random.random() < 0.5 :
+                    self.mem.reg(key = "contract", value = "head")
+                else :
+                    self.mem.reg(key = "contract", value = "tail")
+
+
+class AmoeAgent(Agent) :
+    @property
+    def focus(self) :
+        focus_info = {
+        }
+
+        head_amoe_pos = self.mem.read("head_amoe_pos", None)
+        if head_amoe_pos is not None :
+            focus_info["head_amoe_pos"] =  "(%4.2f, %4.2f)" % (head_amoe_pos[0], head_amoe_pos[1]),
+
+        tail_amoe_pos = self.mem.read("tail_amoe_pos", None)
+        if tail_amoe_pos is not None :
+            focus_info["tail_amoe_pos"] =  "(%4.2f, %4.2f)" % (tail_amoe_pos[0], tail_amoe_pos[1]),
+
+        return focus_info
 
 
 def run_sim(filename = None) :
@@ -305,23 +333,27 @@ def run_sim(filename = None) :
 
     # add objects and agents to the context
 
-    row = 3
-    col = 3
+    row = 5
+    col = 5
     for i in range(col) :
         for j in range(row) :
             k = i * row + j
             # the (2 * k)-th object is coupled with the (2 * k + 1)-th object, i.e. 0 is coupled with 1, 4 is coupled with 5.
-            amoe_pos = (4 * i - 2 * (col - 1), 4 * j - 2 * (row - 1))
+            amoe_pos = (4 * i - 2 * (col - 1) + 2 * ((row - 1)/ 2 - j), 4 * j - 2 * (row - 1))
 
             obj = AmoeObject(name = str(2 * k))
             obj.amoe_pos = amoe_pos
             context.add_obj(obj)
-            schedule.add_agent(Agent(name = str(2 * k), mods = [AmoeDetectModule, AmoeMoveModule, AmoeProcessModule]))
+
+            if i == (col - 1) / 2 and j == (row - 1) / 2:
+                schedule.add_agent(AmoeAgent(name = str(2 * k), mods = [AmoeDetectModule(), AmoeMoveModule(), AmoeProcessModule()]))
+            else :
+                schedule.add_agent(AmoeAgent(name = str(2 * k)))
 
             obj = AmoeObject(name = str(2 * k + 1))
             obj.amoe_pos = amoe_pos
             context.add_obj(obj)
-            schedule.add_agent(Agent(name = str(2 * k + 1)))
+            schedule.add_agent(AmoeAgent(name = str(2 * k + 1)))
 
             # initialize the shared memory
             shared_memory[k] = Memory()
@@ -341,7 +373,7 @@ def run_sim(filename = None) :
 
     sim = Simulator(driver = driver)
 
-    print("Simulating")
+    # print("Simulating")
     sim.simulate(graphics = True, inspector = inspector, filename = filename)
 
 if __name__ == '__main__' :

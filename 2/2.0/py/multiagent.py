@@ -717,7 +717,7 @@ class Module(object) :
         self.__mem = Memory()
 
     @property
-    def mem(self) : # module's memory will be set with the memory of the host agent. 
+    def mem(self) : # module's memory will be set with the memory of the host agent.
         return self.__mem
 
     @mem.setter
@@ -849,9 +849,9 @@ class Agent(object) :
 
         # configure the modules for the agent
 
-        if check_attrs(mods, {"__iter__", None}) :
+        if check_attrs(mods, {"__iter__" : None, }) :
             for mod in mods :
-                if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
+                if check_attrs(mod, {"sense" : None, "process" : None, "act" : None, }) :
                     self.__mods.append(mod)
                     mod.mem = self.__mem
 
@@ -1697,7 +1697,7 @@ class Simulator(object) :
                         focus_info_width = len(focus_info[0])
                         for key, value in focus_agent.focus.items() :
                             if len(key) > 1 :
-                                focus_info.append(rfix_str_len("%s" % key + ":", 12, ':') + " " * 4 + rfix_str_len("%s" % value, 16))
+                                focus_info.append(rfix_str_len("%s" % key + ":", 16, ':') + " " * 4 + rfix_str_len("%s" % value, 20))
                                 focus_info_width = len(focus_info[-1])
                         focus_info.append("")
 
@@ -1723,6 +1723,7 @@ class Simulator(object) :
 
                 pygame.display.set_caption("MultiAgent Simulator v2.0 (c) 2017-2018, NiL, csningli@gmail.com")
                 pygame.display.flip()
+                pygame.event.pump()
 
             updated = False
 
