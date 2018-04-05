@@ -6,4 +6,4 @@ dependencies:
 - scipy
 - pip:
   - pygame == 1.9.2
-  - pymunk == 5.3.1
+  - pymunk == 5.1.0
