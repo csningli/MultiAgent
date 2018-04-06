@@ -4,7 +4,7 @@ All examples inside "MultiAgent/2/examples" are designed with MultiAgent 2,
 and hence compatible with all the subvisions in serise 2.
 
 ## Run An Example
-To run an example, say "amoebot". You need to at first change directory into "examples/amoebot".
+To run an example, say "amoebot", you need to at first change directory into "examples/amoebot".
 There is a README file for each of the examples. With it, you can find more information about
 the example. To run the example, you can simply "python" with the "\_sim.py" script.  
 
