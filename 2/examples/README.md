@@ -1,7 +1,7 @@
 # MultiAgent Examples
 
-All examples in the directory of "MultiAgent/2/examples" are designed with MultiAgent 2, and
-compatible with all the subvisions in serise 2.
+All examples inside "MultiAgent/2/examples" are designed with MultiAgent 2,
+and hence compatible with all the subvisions in serise 2.
 
 ## Run An Example
 To run an example, say "amoebot". You need to at first change directory into "examples/amoebot".
