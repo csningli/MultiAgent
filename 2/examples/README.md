@@ -15,8 +15,8 @@ Then a Pygame window will show up, inside which you can control the simulation u
 ## Run without Any Argument
 
 Without any argument, the simulation will automatically generate a saving file, which records all
-the necessary data to continue the simulation later. For example, if you start the "amoebot" example
-without any argument, and close it with "ESC" key, a new file of extension ".data" appears in the
+the necessary data to continue the simulation later. For example, if you started the "amoebot" example
+without any argument, and closed it with "ESC" key, a new file of extension ".data" appears in the
 current directory, like "multiagent_20180406093531_320529.data".
 
 Since the data are saved into the file at the end of the simulation, you may need to wait for a while
