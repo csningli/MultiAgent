@@ -163,6 +163,7 @@ class Object(Circle, LookMixin) :
             "scolor" : str(self.stroke_color),
             "visible" : str(self.visible),
         }
+        # print("prop:", self.fill_color, p["fcolor"], p["pcolor"])
         return p
 
     @prop.setter
@@ -286,18 +287,6 @@ class OracleSpace(Space) :
     @property
     def obts(self) :
         return self.__obts
-
-    def get_obj_gen(self) :
-        obj_gen = None
-        if len(self.__objs) > 0 :
-            obj_gen = type(self.__objs.values()[0])
-        return obj_gen
-
-    def get_obt_gen(self) :
-        obt_gen = None
-        if len(self.__obts) > 0 :
-            obt_gen = type(self.__obts.values()[0])
-        return obt_gen
 
     def add_obj(self, obj) :
         if check_attrs(obj, {
@@ -547,25 +536,10 @@ class Context(object) :
 
     @obj_props.setter
     def obj_props(self, props) :
-        names = [obj.name for obj in self.__oracle.objs.values()]
         for name, prop in props.items() :
             obj = self.__oracle.objs.get(name, None)
             if obj is not None :
                 obj.prop = prop
-                names.remove(name)
-            else :
-                obj_gen = self.__oracle.get_obj_gen()
-                if obj_gen is None :
-                    obj_gen = self.__schedule.get_obj_gen()
-                    if obj_gen is None :
-                        obj_gen = Object
-                if len(self.__oracle.objs) > 0 : # thus it is highly recommended that initial context with non-empty objs
-                    obj_gen = type(self.__oracle.objs.values()[0])
-                obj = obj_gen(name = name, mass = float(prop["mass"]), radius = float(prop["radius"]))
-                obj.prop = prop
-                self.__oracle.add_obj(obj)
-        for name in names :
-            self.__oracle.objs[name].visible = False
 
     @property
     def obt_props(self) : # obt_props is in name-dict dict.
@@ -576,26 +550,10 @@ class Context(object) :
 
     @obt_props.setter
     def obt_props(self, props) :
-        names = [obt.name for obt in self.__oracle.obts.values()]
         for name, prop in props.items() :
             obt = self.__oracle.obts.get(name, None)
             if obt is not None :
                 obt.prop = prop
-                names.remove(name)
-            else :
-                obt_gen = self.__oracle.get_obt_gen()
-                if obt_gen is None :
-                    obt_gen = self.__schedule.get_obt_gen()
-                    if obt_gen is None :
-                        obt_gen = Obstacle
-                obt = obt_gen(name = name,
-                    a = tuple([int(i) for i in p["start"].strip("(").strip(")").split(",")]),
-                    b = tuple([int(i) for i in p["start"].strip("(").strip(")").split(",")]),
-                    radius = float(prop["radius"]))
-                obt.prop = prop
-                self.__oracle.add_obt(obt)
-        for name in names :
-            self.__oracle.obts[name].visible = False
 
     @property
     def paras(self) : # paras is in key-value dict.
@@ -629,7 +587,7 @@ class Context(object) :
                 elif msg.key == "force" :
                     obj.force = msg.value
                 elif msg.key == "color" :
-                    obj.fill_color = msg.value
+                    obj.fill_color = tuple(msg.value)
             for key, value in {"pos" : obj.pos, "angle" : obj.angle, "vel" : obj.vel, "avel" : obj.avel,
                     "force" : obj.force, "color" : obj.fill_color}.items() :
                 self.__resp.add_msg(Message(dest = name, key = key, value = value))
@@ -800,6 +758,7 @@ class ObjectModule(Module) :
             value = self.mem.read(prop, None)
             if value is not None and value != self.__buff.get(prop, None) :
                 resp.add_msg(Message(key = prop, value = value))
+                self.mem.reg(key = prop, value = None)
 
 
 class RadioModule(Module) :
@@ -814,6 +773,8 @@ class RadioModule(Module) :
         radio_msg = self.mem.read("radio_out", None)
         if radio_msg is not None :
             resp.add_msg(Message(key = "radio", value = radio_msg))
+            self.mem.reg(key = "radio_out", value = None)
+
 
 
 class RadarModule(Module) :
@@ -828,10 +789,10 @@ class RadarModule(Module) :
         radar_dist = self.mem.read("radar_dist", None)
         if radar_dist is not None :
             resp.add_msg(Message(key = "radar", value = radar_dist))
-        resp.add_msg(Message(key = "radar", value = 10))
+            self.mem.reg(key = "radar", value = None)
 
 class Agent(object) :
-    def __init__(self, name, mods = None) :
+    def __init__(self, name) :
         self.__name = ""
         self.__mem = Memory()
         self.__mods = []
@@ -839,7 +800,7 @@ class Agent(object) :
         self.__resp = None
         self.__active = True
         self.name = name
-        self.config(mods = mods)
+        self.config()
 
     def config(self, mods = None) :
         if mods is None :
@@ -866,6 +827,10 @@ class Agent(object) :
     def name(self, name) :
         self.__name = name
         self.__mem.reg("name", self.__name)
+
+    @property
+    def mods(self) :
+        return self.__mods
 
     @property
     def active(self) :
@@ -1095,26 +1060,25 @@ class Schedule(object) :
     def info(self) :
         return "<<multiagent.%s queue_len=%d last=%d>>" % (type(self).__name__, len(self.__queue), self.__last)
 
-    def get_gen(self, category) :
+    def get_gen(self, category, name) :
         gen = None
-        i = 0
         found = False
-        while found == False and i <= self.__last :
-            if i in self.__queue.keys() and category in self.__queue[i].keys() :
-                if len(self.__queue[i][category]) > 0 :
-                    gen = type(self.__queue[i][category][0])
-                    found = True
-            i += 1
+        while found == False :
+            for item in self.__queue.values() :
+                for temp in item[category] :
+                    if temp.name == name :
+                        gen = type(temp)
+                        found = True
         return gen
 
-    def get_agent_gen(self) :
-        return self.get_gen("agent")
+    def get_agent_gen(self, name) :
+        return self.get_gen("agent", name)
 
-    def get_obj_gen(self) :
-        return self.get_gen("obj")
+    def get_obj_gen(self, name) :
+        return self.get_gen("obj", name)
 
-    def get_obt_gen(self) :
-        return self.get_gen("obt")
+    def get_obt_gen(self, name) :
+        return self.get_gen("obt", name)
 
     def add_obj(self, obj, delay = 0) :
         self.queue_append(item = obj, category = "obj", delay = delay)
@@ -1201,21 +1165,10 @@ class Driver(object) :
 
     @agent_memos.setter
     def agent_memos(self, memos) :
-        names = copy.copy(self.__agents.keys())
         for name, memo in memos.items() :
             agent = self.__agents.get(name, None)
             if agent is not None :
                 agent.memo = memo
-                names.remove(name)
-            else :
-                agent_gen = self.__schedule.get_agent_gen()
-                if agent_gen is None :
-                    agent_gen = Agent
-                agent = agent_gen(name = name)
-                agent.memo = memo
-                self.__agents[name] = agent
-        for name in names :
-            self.__agents[name].active = False
 
     @property
     def steps(self) :
@@ -1346,12 +1299,45 @@ class Driver(object) :
 
     def apply_shot(self, shot) :
         result = False
-        if check_attrs(shot, {
-                "agent_memos" : None,
-                "context_paras" : None,
-                "obj_props" : None,
-                "obt_props" : None,
-            }) :
+        if check_attrs(shot, {"agent_memos" : None, "context_paras" : None, "obj_props" : None, "obt_props" : None}) :
+            for agent in self.__agents.values() :
+                agent.active = False
+            for name, memo in shot.agent_memos.items() :
+                if name not in self.__agents.keys() :
+                    agent_gen = self.__schedule.get_agent_gen(name)
+                    if agent_gen is None :
+                        agent_gen = Agent
+                    agent = agent_gen(name = name)
+                    agent.memo = memo
+                    self.__agents[name] = agent
+                self.__agents[name].active = True
+
+            for obj in self.__context.oracle.objs.values() :
+                obj.visible = False
+            for name, prop in shot.obj_props.items() :
+                if name not in self.__context.oracle.objs.keys() :
+                    obj_gen = self.__schedule.get_obj_gen(name)
+                    if obj_gen is None :
+                        obj_gen = Object
+                    obj = obj_gen(name = name, mass = float(prop["mass"]), radius = float(prop["radius"]))
+                    self.__context.oracle.add_obj(obj)
+
+                self.__context.oracle.objs[name].visible = True
+                
+            for obt in self.__context.oracle.obts.values() :
+                obt.visible = False
+            for name, prop in shot.obt_props.items() :
+                if name not in self.__context.oracle.obts.keys() :
+                    obt_gen = self.__schedule.get_obt_gen(name)
+                    if obt_gen is None :
+                        obt_gen = Obstacle
+                    obt = obt_gen(name = name,
+                        a = tuple([int(i) for i in prop["start"].strip("(").strip(")").split(",")]),
+                        b = tuple([int(i) for i in prop["end"].strip("(").strip(")").split(",")]),
+                        radius = float(prop["radius"]))
+                    self.__context.oracle.add_obt(obt)
+                self.__context.oracle.obts[name].visible = True
+
             self.agent_memos = shot.agent_memos
             self.__context.paras = shot.context_paras
             self.__context.obj_props = shot.obj_props

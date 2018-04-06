@@ -1,4 +1,3 @@
-#! /Users/nil/anaconda3/envs/multiagent_2/bin/python
 
 # MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
@@ -159,8 +158,8 @@ class AmoeContext(Context) :
                     elif msg.value == "tail" :
                         self.oracle.move_amoe_obj(head.name, tail.amoe_pos)
                 # print(head.amoe_pos, tail.amoe_pos)
-            self.resp.add_msg(Message(dest = head.name, key = "head_amoe_pos", value = head.amoe_pos))
-            self.resp.add_msg(Message(dest = head.name, key = "tail_amoe_pos", value = tail.amoe_pos))
+            self.resp.add_msg(Message(dest = head.name, key = "head_amoe_pos", value = tuple(head.amoe_pos)))
+            self.resp.add_msg(Message(dest = head.name, key = "tail_amoe_pos", value = tuple(tail.amoe_pos)))
             head_detect = []
             tail_detect = []
             for port in [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)] :
@@ -270,8 +269,9 @@ class AmoeMoveModule(Module) :
             expand_value = self.mem.read("expand", None)
             if expand_value is not None and check_attrs(expand_value, {"__getitem__" : None, "__len__" : None}) and len(expand_value) >= 2 :
                 resp.add_msg(Message(key = "expand", value = expand_value))
-        self.mem.reg("contract", None)
-        self.mem.reg("expand", None)
+        self.mem.reg(key = "contract", value = None)
+        self.mem.reg(key = "expand", value = None)
+
 
 class AmoeProcessModule(Module) :
     def process(self) :
@@ -286,7 +286,7 @@ class AmoeProcessModule(Module) :
             for port in head_detect :
                 if port in head_ports :
                     del(head_ports[head_ports.index(port)])
-            if (head_amoe_pos == tail_amoe_pos).all() :
+            if head_amoe_pos == tail_amoe_pos :
                 if len(head_ports) > 0 :
                     if random.random() < 0.5 :
                         self.mem.reg(key = "expand", value = random.choice(head_ports))
@@ -297,7 +297,7 @@ class AmoeProcessModule(Module) :
                     self.mem.reg(key = "contract", value = "tail")
 
 
-class AmoeAgent(Agent) :
+class AmoeFocusAgent(Agent) :
     @property
     def focus(self) :
         focus_info = {
@@ -312,6 +312,18 @@ class AmoeAgent(Agent) :
             focus_info["tail_amoe_pos"] =  "(%4.2f, %4.2f)" % (tail_amoe_pos[0], tail_amoe_pos[1]),
 
         return focus_info
+
+
+class AmoeStaticAgent(AmoeFocusAgent) :
+    def __init__(self, name) :
+        super(AmoeStaticAgent, self).__init__(name)
+        self.config(mods = [])
+
+
+class AmoeDynamicAgent(AmoeFocusAgent) :
+    def __init__(self, name) :
+        super(AmoeDynamicAgent, self).__init__(name)
+        self.config(mods = [AmoeDetectModule(), AmoeMoveModule(), AmoeProcessModule()])
 
 
 def run_sim(filename = None) :
@@ -346,20 +358,14 @@ def run_sim(filename = None) :
             context.add_obj(obj)
 
             if i == (col - 1) / 2 and j == (row - 1) / 2:
-                schedule.add_agent(AmoeAgent(name = str(2 * k), mods = [AmoeDetectModule(), AmoeMoveModule(), AmoeProcessModule()]))
+                schedule.add_agent(AmoeDynamicAgent(name = str(2 * k)))
             else :
-                schedule.add_agent(AmoeAgent(name = str(2 * k)))
+                schedule.add_agent(AmoeStaticAgent(name = str(2 * k)))
 
             obj = AmoeObject(name = str(2 * k + 1))
             obj.amoe_pos = amoe_pos
             context.add_obj(obj)
-            schedule.add_agent(AmoeAgent(name = str(2 * k + 1)))
-
-            # initialize the shared memory
-            shared_memory[k] = Memory()
-            shared_memory[k].reg("state", "contracted")  # contracted / expanded
-            shared_memory[k].reg("head_pos", amoe_pos) # the amoe pos of (2 * i)-th object
-            shared_memory[k].reg("tail_pos", amoe_pos) # the amoe pos of (2 * i + 1)-th object
+            schedule.add_agent(AmoeFocusAgent(name = str(2 * k + 1)))
 
     # create the driver
 
