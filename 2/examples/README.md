@@ -12,7 +12,7 @@ the example. To run the example, you can simply "python" with the "\_sim.py" scr
 
 Then a Pygame window will show up, inside which you can control the simulation using keybord keys.
 
-### Run without any argument
+## Run without Any Argument
 
 Without any argument, the simulation will automatically generate a saving file, which records all
 the necessary data to continue the simulation later. For example, if you start the "amoebot" example
@@ -22,7 +22,7 @@ current directory, like "multiagent_20180406093531_320529.data".
 Since the data are saved into the file at the end of the simulation, you may need to wait for a while
 if you have run a complex simulation for a long period of time.  
 
-### Run with an argument
+## Run with An Argument
 
 The "\_sim.py" script accept at most one argument, which is restricted to be a saving file of the multiagent simulation
 (the only exception is "", the empty string).
