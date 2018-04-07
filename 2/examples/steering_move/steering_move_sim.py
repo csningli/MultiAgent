@@ -7,6 +7,8 @@ random.seed(datetime.datetime.now())
 
 sys.path.append("../../2.0/py")
 
+from numpy import array
+
 from multiagent import *
 from utils import *
 
@@ -24,13 +26,64 @@ class SteeringObject(Object) :
         self.__label = value
 
 
-class SteeringContext(Context) :
-    def handle_reqt(self, reqt) :
-        resp = super(SteeringContext, self).handle_reqt(reqt)
-        return self.resp
+class SteeringProcessModule(Module) :
+    def process(self) :
+        pos = self.mem.read("pos", None)
+        target = self.mem.read("target", None)
+        if pos is not None and (target is None or ppdist_l2(target, pos) < 5) :
+            self.mem.reg("target", (math.floor(random.random() * 200), math.floor(random.random() * 200)))
 
-    def draw(self, screen) :
-        super(SteeringContext, self).draw(screen)
+
+class SteeringMoveModule(ObjectModule) :
+    def act(self, resp) :
+        target = self.mem.read("target", None)
+        if target is not None :
+            pos = self.mem.read("pos", None)
+            angle = self.mem.read("angle", None)
+            if pos is not None and angle is not None :
+                target_vel = (target[0] - pos[0], target[1] - pos[1])
+                if norm(array(target_vel)) > 0.001 :
+                    target_angle = math.acos(target_vel[0] / norm(array(target_vel)))
+                    if target_vel[1] <  0 :
+                        target_angle = - target_angle + 2 * math.pi
+                    target_avel = target_angle - angle
+                    if abs(target_avel) > 0.01 :
+                        if abs(target_avel) < 0.5 :
+                            resp.add_msg(Message(key = "angle", value = target_angle))
+                        else :
+                            if target_avel > 0 :
+                                target_avel = max(0.001, target_avel)
+                            else :
+                                target_avel = min(-0.001, target_avel)
+                            resp.add_msg(Message(key = "avel", value = target_avel))
+                            resp.add_msg(Message(key = "vel", value = (0, 0)))
+                    else :
+                        if norm(array(target_vel)) < 1 :
+                            target_vel = array(target_vel) / norm(target_vel)
+                        resp.add_msg(Message(key = "vel", value = tuple(target_vel)))
+                        resp.add_msg(Message(key = "avel", value = 0))
+        super(SteeringMoveModule, self).act(resp)
+
+
+class SteeringAgent(Agent) :
+    def __init__(self, name) :
+        super(SteeringAgent, self).__init__(name)
+        self.config(mods = [SteeringMoveModule(), SteeringProcessModule()])
+
+    @property
+    def focus(self) :
+        focus_info = {
+        }
+
+        target = self.mem.read("target", None)
+        if target is not None :
+            focus_info["target"] =  "(%4.2f, %4.2f)" % (target[0], target[1])
+
+        pos = self.mem.read("pos", None)
+        if pos is not None :
+            focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1])
+
+        return focus_info
 
 
 def run_sim(filename = None) :
@@ -44,7 +97,7 @@ def run_sim(filename = None) :
 
     # create the context
 
-    context = SteeringContext(oracle = oracle)
+    context = Context(oracle = oracle)
 
     # create the schedule for adding agents in the running
 
@@ -55,7 +108,7 @@ def run_sim(filename = None) :
     obj = SteeringObject(name = "0")
     obj.pos = (0, 0)
     context.add_obj(obj)
-    schedule.add_agent(Agent(name = "0"))
+    schedule.add_agent(SteeringAgent(name = "0"))
 
     # create the driver
 

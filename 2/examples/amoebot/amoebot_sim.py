@@ -269,12 +269,12 @@ class AmoeMoveModule(Module) :
         contract_value = self.mem.read("contract", None)
         if contract_value is not None and contract_value in ["head", "tail"]:
             resp.add_msg(Message(key = "contract", value = contract_value))
+            self.mem.reg(key = "contract", value = None)
         else :
             expand_value = self.mem.read("expand", None)
             if expand_value is not None and check_attrs(expand_value, {"__getitem__" : None, "__len__" : None}) and len(expand_value) >= 2 :
                 resp.add_msg(Message(key = "expand", value = expand_value))
-        self.mem.reg(key = "contract", value = None)
-        self.mem.reg(key = "expand", value = None)
+                self.mem.reg(key = "expand", value = None)
 
 
 class AmoeProcessModule(Module) :

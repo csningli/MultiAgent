@@ -573,6 +573,10 @@ class Context(object) :
                     obj.vel = msg.value
                 elif msg.key == "avel" :
                     obj.avel = msg.value
+                elif msg.key == "pos" :
+                    obj.pos = msg.value
+                elif msg.key == "angle" :
+                    obj.angle = msg.value
                 elif msg.key == "force" :
                     obj.force = msg.value
                 elif msg.key == "color" :
@@ -734,6 +738,10 @@ class ObjectModule(Module) :
         super(ObjectModule, self).__init__()
         self.__buff = {}
 
+    @property
+    def buff(self) :
+        return self.__buff
+
     def sense(self, reqt) :
         for msg in reqt.get_msgs(self.mem.read("name", None)) :
             for prop in ["pos", "angle", "vel", "avel", "force", "color"] :
@@ -743,11 +751,12 @@ class ObjectModule(Module) :
                     break
 
     def act(self, resp) :
-        for prop in ["vel", "avel", "force", "color"] :
+        for prop in ["vel", "avel", "force", "color", "angle", "pos"] :
             value = self.mem.read(prop, None)
             if value is not None and value != self.__buff.get(prop, None) :
                 resp.add_msg(Message(key = prop, value = value))
                 self.mem.reg(key = prop, value = None)
+
 
 
 class RadioModule(Module) :
@@ -839,15 +848,15 @@ class Agent(object) :
 
         pos = self.__mem.read("pos")
         if pos is not None :
-            focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1]),
+            focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1])
 
         vel = self.__mem.read("vel")
         if vel is not None :
-            focus_info["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1]),
+            focus_info["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1])
 
         force = self.__mem.read("force")
         if force is not None :
-            focus_info["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1]),
+            focus_info["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1])
 
         return focus_info
 
