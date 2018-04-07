@@ -1069,6 +1069,7 @@ class Schedule(object) :
                     if temp.name == name :
                         gen = type(temp)
                         found = True
+
         return gen
 
     def get_agent_gen(self, name) :
@@ -1323,7 +1324,7 @@ class Driver(object) :
                     self.__context.oracle.add_obj(obj)
 
                 self.__context.oracle.objs[name].visible = True
-                
+
             for obt in self.__context.oracle.obts.values() :
                 obt.visible = False
             for name, prop in shot.obt_props.items() :

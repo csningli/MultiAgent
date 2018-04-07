@@ -48,7 +48,7 @@ shared_memory = {}
 class AmoeObject(Object) :
     @property
     def amoe_pos(self) :
-        return xy_to_pq(self.pos)
+        return tuple(xy_to_pq(self.pos))
 
     @amoe_pos.setter
     def amoe_pos(self, pos) :
@@ -102,6 +102,7 @@ class AmoeOracleSpace(OracleSpace) :
             self.obts[obt.name] = obt
 
     def move_amoe_obj(self, name, amoe_pos) :
+        amoe_pos = tuple(amoe_pos)
         if name in self.objs.keys() :
             obj = self.objs[name]
             if str(obj.amoe_pos) in self.__objs_indexing.keys() :
@@ -114,6 +115,7 @@ class AmoeOracleSpace(OracleSpace) :
             self.__objs_indexing[str(amoe_pos)].append(name)
 
     def objs_at_amoe_pos(self, amoe_pos) :
+        amoe_pos = tuple(amoe_pos)
         return self.__objs_indexing.get(str(amoe_pos), [])
 
     def draw(self, screen) :
@@ -128,7 +130,7 @@ class AmoeOracleSpace(OracleSpace) :
         for i in range(int(math.floor(len(self.objs) / 2.0))) :
             head = self.objs[str(2 * i)]
             tail = self.objs[str(2 * i + 1)]
-            if (head.amoe_pos != tail.amoe_pos).any() :
+            if head.amoe_pos != tail.amoe_pos :
                 head_draw = [int(round(width / 2.0 + head.pos[0])), int(round(height / 2.0 - head.pos[1]))]
                 tail_draw = [int(round(width / 2.0 + tail.pos[0])), int(round(height / 2.0 - tail.pos[1]))]
                 pygame.draw.line(screen, head.stroke_color, head_draw, tail_draw, 4)
@@ -150,22 +152,23 @@ class AmoeContext(Context) :
             for msg in msgs.get(head.name, []) :
                 # print(msg.key, msg.value, head.amoe_pos, tail.amoe_pos)
                 if msg.key == "expand" :
-                    if (head.amoe_pos == tail.amoe_pos).all() and len(self.oracle.objs_at_amoe_pos(head.amoe_pos + msg.value)) < 1:
-                        self.oracle.move_amoe_obj(head.name, head.amoe_pos + msg.value)
+                    if head.amoe_pos == tail.amoe_pos and len(self.oracle.objs_at_amoe_pos(array(head.amoe_pos) + array(msg.value))) < 1:
+                        self.oracle.move_amoe_obj(head.name, array(head.amoe_pos) + array(msg.value))
                 elif msg.key == "contract" :
                     if msg.value == "head" :
                         self.oracle.move_amoe_obj(tail.name, head.amoe_pos)
                     elif msg.value == "tail" :
                         self.oracle.move_amoe_obj(head.name, tail.amoe_pos)
                 # print(head.amoe_pos, tail.amoe_pos)
+
             self.resp.add_msg(Message(dest = head.name, key = "head_amoe_pos", value = tuple(head.amoe_pos)))
             self.resp.add_msg(Message(dest = head.name, key = "tail_amoe_pos", value = tuple(tail.amoe_pos)))
             head_detect = []
             tail_detect = []
             for port in [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)] :
-                if len(self.oracle.objs_at_amoe_pos(head.amoe_pos + port)) > 0 :
+                if len(self.oracle.objs_at_amoe_pos(array(head.amoe_pos) + array(port))) > 0 :
                     head_detect.append(port)
-                if len(self.oracle.objs_at_amoe_pos(tail.amoe_pos + port)) > 0 :
+                if len(self.oracle.objs_at_amoe_pos(array(tail.amoe_pos) + array(port))) > 0 :
                     tail_detect.append(port)
             self.resp.add_msg(Message(dest = head.name, key = "head_detect", value = head_detect))
             self.resp.add_msg(Message(dest = head.name, key = "tail_detect", value = tail_detect))
@@ -280,7 +283,8 @@ class AmoeProcessModule(Module) :
         tail_amoe_pos = self.mem.read("tail_amoe_pos", None)
         head_detect = self.mem.read("head_detect", [])
         tail_detect = self.mem.read("tail_detect", [])
-
+        # print("head_detect:", head_detect)
+        # print("tail_detect:", tail_detect)
         if head_amoe_pos is not None and tail_amoe_pos is not None :
             head_ports = [(1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0)]
             for port in head_detect :
@@ -290,6 +294,7 @@ class AmoeProcessModule(Module) :
                 if len(head_ports) > 0 :
                     if random.random() < 0.5 :
                         self.mem.reg(key = "expand", value = random.choice(head_ports))
+                        # print("port:", self.mem.read("expand"))
             else :
                 if random.random() < 0.5 :
                     self.mem.reg(key = "contract", value = "head")
@@ -379,7 +384,7 @@ def run_sim(filename = None) :
 
     sim = Simulator(driver = driver)
 
-    # print("Simulating")
+    print("Simulating")
     sim.simulate(graphics = True, inspector = inspector, filename = filename)
 
 if __name__ == '__main__' :
