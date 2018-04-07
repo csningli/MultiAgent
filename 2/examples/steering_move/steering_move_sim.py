@@ -25,6 +25,13 @@ class SteeringObject(Object) :
     def label(self, value) :
         self.__label = value
 
+    def draw(self, screen) :
+        super(SteeringObject, self).draw(screen)
+        if self.visible == True :
+            font = pygame.font.Font(None, 16)
+            (width, height) = screen.get_size()
+            pos_draw = (int(width / 2.0 + self.pos[0] - 5.0), int(height / 2.0 - self.pos[1] - self.radius - 10.0))
+            screen.blit(font.render(self.label, 1, THECOLORS["black"]), pos_draw)
 
 class SteeringProcessModule(Module) :
     def process(self) :
