@@ -66,7 +66,6 @@ class Object(Circle, LookMixin) :
         body = Body(mass = mass, moment = moment_for_circle(mass, 0, radius, (0,0)))
         super(Object, self).__init__(body, radius, (0, 0))
         self.__name = name
-        self.__label = self.__name
         self.mass = mass
 
     def info(self) :
@@ -79,14 +78,6 @@ class Object(Circle, LookMixin) :
     @name.setter
     def name(self, name) :
         self.__name = name
-
-    @property
-    def label(self) :
-        return self.__label
-
-    @label.setter
-    def label(self, label) :
-        self.__label = label
 
     # uncomment the property mass will return or set the mass of the body directly.
 
@@ -151,7 +142,6 @@ class Object(Circle, LookMixin) :
         p = {
             "mass" : str(self.mass),
             "radius" : str(self.radius),
-            "label" : str(self.label),
             "pos" : str(self.pos),
             "angle" : str(self.angle),
             "rot" : str(self.rot),
@@ -169,7 +159,6 @@ class Object(Circle, LookMixin) :
     @prop.setter
     def prop(self, p) :
         self.mass = float(p["mass"])
-        self.label = str(p["label"])
         self.angle = float(p["angle"])
         self.avel = float(p["avel"])
         self.visible = bool(p["visible"])
@@ -1495,7 +1484,6 @@ class Commander(object) :
 
     def check(self):
         msgs = []
-
         if self.__con is None and os.path.exists(self.__database) :
             self.__con = sqlite3.connect(self.__database)
 

@@ -1,6 +1,5 @@
-#! /Users/nil/anaconda3/envs/multiagent_1_0/bin/python
 
-# MultiAgent 2.0 
+# MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
 import sys, os, time
@@ -8,7 +7,7 @@ import doctest
 
 sys.path.append("../py")
 
-from multiagent import * 
+from multiagent import *
 
 def test_request_init() :
     '''
@@ -38,8 +37,5 @@ def test_request_add() :
 
 if __name__ == '__main__' :
     result = doctest.testmod()
-    print("-" * 50) 
-    print("[Request Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed)) 
-
-
-
+    print("-" * 50)
+    print("[Request Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))

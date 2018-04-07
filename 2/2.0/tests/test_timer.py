@@ -1,6 +1,5 @@
-#! /Users/nil/anaconda3/envs/multiagent_1_0/bin/python
 
-# MultiAgent 2.0 
+# MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
 import sys, os, time
@@ -8,7 +7,7 @@ import doctest
 
 sys.path.append("../py")
 
-from multiagent import * 
+from multiagent import *
 
 def test_timer_init() :
     '''
@@ -17,7 +16,7 @@ def test_timer_init() :
     '''
     timer = Timer()
     print("Timer: %s" % timer.info())
-    
+
 def test_timer_tick_tack() :
     '''
     >>> test_timer_tick_tack()
@@ -40,8 +39,5 @@ def test_timer_tick_tack() :
 
 if __name__ == '__main__' :
     result = doctest.testmod()
-    print("-" * 50) 
-    print("[Timer Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed)) 
-
-
-
+    print("-" * 50)
+    print("[Timer Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))

@@ -1,6 +1,5 @@
-#! /Users/nil/anaconda3/envs/multiagent_1_0/bin/python
 
-# MultiAgent 2.0 
+# MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
 import sys, os, time
@@ -8,7 +7,7 @@ import doctest
 
 sys.path.append("../py")
 
-from multiagent import * 
+from multiagent import *
 
 def test_oracle_init() :
     '''
@@ -30,7 +29,7 @@ def test_oracle_add() :
     Oracle: <<multiagent.OracleSpace objs_num=0 obts_num=0>>
     '''
     oracle = OracleSpace(
-            objs = [Object(name = "obj1"),], 
+            objs = [Object(name = "obj1"),],
             obts = [Obstacle(name = "obt1", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)])
     print("Oracle: %s" % oracle.info())
     obj = Object(name = "obj2")
@@ -56,8 +55,5 @@ def test_oracle_get() :
 
 if __name__ == '__main__' :
     result = doctest.testmod()
-    print("-" * 50) 
-    print("[Oracle Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed)) 
-
-
-
+    print("-" * 50)
+    print("[Oracle Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))

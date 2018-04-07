@@ -152,8 +152,9 @@ class AmoeContext(Context) :
             for msg in msgs.get(head.name, []) :
                 # print(msg.key, msg.value, head.amoe_pos, tail.amoe_pos)
                 if msg.key == "expand" :
-                    if head.amoe_pos == tail.amoe_pos and len(self.oracle.objs_at_amoe_pos(array(head.amoe_pos) + array(msg.value))) < 1:
-                        self.oracle.move_amoe_obj(head.name, array(head.amoe_pos) + array(msg.value))
+                    target_amoe_pos = array(head.amoe_pos) + array(msg.value)
+                    if head.amoe_pos == tail.amoe_pos and len(self.oracle.objs_at_amoe_pos(target_amoe_pos)) < 1:
+                        self.oracle.move_amoe_obj(head.name, target_amoe_pos)
                 elif msg.key == "contract" :
                     if msg.value == "head" :
                         self.oracle.move_amoe_obj(tail.name, head.amoe_pos)
