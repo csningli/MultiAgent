@@ -49,27 +49,27 @@ class SteeringMoveModule(ObjectModule) :
             vel = self.mem.read("vel", None)
             angle = self.mem.read("angle", None)
             if pos is not None and vel is not None and angle is not None :
-                target_vel = (target[0] - pos[0], target[1] - pos[1])
-                speed = norm(array(target_vel))
-                if speed > 0.001 :
-                    target_angle = math.acos(target_vel[0] / speed)
-                    if target_vel[1] <  0 :
-                        target_angle = - target_angle + 2 * math.pi
+                vel_target = (target[0] - pos[0], target[1] - pos[1])
+                speed_target = norm(array(vel_target))
+                if speed_target > 0.001 :
+                    angle_target = math.acos(vel_target[0] / speed_target)
+                    if vel_target[1] <  0 :
+                        angle_target = - angle_target + 2 * math.pi
 
-                    perform_avel = target_angle - angle
-                    if abs(perform_avel) > 0.01 :
-                        if abs(perform_avel) < 0.5 :
-                            resp.add_msg(Message(key = "angle", value = target_angle))
+                    avel_perform = angle_target - angle
+                    if abs(avel_perform) > 0.01 :
+                        if abs(avel_perform) < 0.5 :
+                            resp.add_msg(Message(key = "angle", value = angle_target))
                         else :
-                            if perform_avel > 0 :
-                                perform_avel = max(0.001, perform_avel)
+                            if avel_perform > 0 :
+                                avel_perform = max(0.001, avel_perform)
                             else :
-                                perform_avel = min(-0.001, perform_avel)
-                            resp.add_msg(Message(key = "avel", value = perform_avel))
-                            speed = min(1, norm(array(vel)))
+                                avel_perform = min(-0.001, avel_perform)
+                            resp.add_msg(Message(key = "avel", value = avel_perform))
+                            speed_target = min(1, norm(array(vel)))
 
-                    perform_vel = (math.cos(angle) * speed, math.sin(angle) * speed)
-                    resp.add_msg(Message(key = "vel", value = perform_vel))
+                    vel_perform = (math.cos(angle) * speed_target, math.sin(angle) * speed_target)
+                    resp.add_msg(Message(key = "vel", value = vel_perform))
 
         super(SteeringMoveModule, self).act(resp)
 
