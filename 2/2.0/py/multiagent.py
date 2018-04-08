@@ -1254,37 +1254,9 @@ class Driver(object) :
                 del(self.__agents[name])
 
     def handle_cmds(self, cmd_msgs) :
-        context_cmds = []
-        agent_cmds = {}
-        for msg in cmd_msgs :
-            if CommandPack.check(msg) :
-                cp = CommandPack(cmd = msg)
-                if cp.target == "cont" :
-                    context_cmds.append(str(cp.guide))
-                elif cp.target == "agent" :
-                    names = []
-                    for r in cp.range :
-                        if r == "null" :
-                            pass
-                        elif r == "all" :
-                            names = self.__agents.keys()
-                        else :
-                            if r.isdigit() :
-                                names.append(str(r))
-                            else :
-                                rl = r.split('-')
-                                if len(rl) == 2 and rl[0].isdigit() and rl[1].isdigit() and int(rl[0]) <= int(rl[1]) :
-                                    for i in range(int(rl[0]), int(rl[1]) + 1) :
-                                        if i not in names :
-                                            names.append(str(i))
-                    for name in names :
-                        if name in self.__agents.keys() :
-                            if name not in agent_cmds.keys() :
-                                agent_cmds[name] = []
-                            agent_cmds[name].append(str(cp.guide))
-        for name, cmds in agent_cmds.items() :
-            self.__agents[name].handle_cmds(cmds)
-        self.__context.handle_cmds(context_cmds)
+        for agent in self.__agents.values() :
+            agent.handle_cmds(cmd_msgs)
+        self.__context.handle_cmds(cmd_msgs)
 
     def take_shot(self) :
         shot = self.__data.get_shot(self.__steps)
@@ -1386,98 +1358,6 @@ class Inspector(object) :
             if shot is not None and check_attrs(shot, {"obj_props" : None, "obt_props" : None, "agent_memos" : None, "context_paras" : None}) :
                 pass
             self.reset()
-        return result
-
-
-class CommandPack(object) :
-    def __init__(self, cmd = "") :
-        self.__pack = {
-            "target" : None,
-            "range" : [],
-            "guide" : "",
-        }
-        if CommandPack.check(cmd) :
-            self.__pack = CommandPack.extract(cmd)
-
-    def __str__(self) :
-        cmd = "target:%s;range:%s;guide:%s" % (self.target, ','.join(self.range), self.guide)
-        return cmd
-
-    @property
-    def target(self) :
-        return self.__pack["target"]
-
-    @property
-    def range(self) :
-        return self.__pack["range"]
-
-    @property
-    def guide(self) :
-        return self.__pack["guide"]
-
-    @staticmethod
-    def check(cmd = "") :
-        result = True
-        if len(cmd.split(';')) == 3 :
-            for term in cmd.split(';') :
-                if len(term.split(':')) == 2 and term.split(':')[0].strip() in ["tar", "ran", "gd"] :
-                    if term.split(':')[0].strip() == "tar" :
-                        if term.split(':')[1].strip() in ["agent", "cont"] :
-                            pass
-                        else :
-                            print(0)
-                            result = False
-                            break
-                    elif term.split(':')[0].strip() == "ran" :
-                        for sub in term.split(':')[1].split(',') :
-                            if '-' in sub :
-                                if sub.strip().replace('-', '0').isdigit() and len(sub.split('-')) == 2 :
-                                    pass
-                                else :
-                                    print(1)
-                                    result = False
-                                    break
-                            else :
-                                if sub.strip().isdigit() or sub.strip() in ["null", "all"] :
-                                    pass
-                                else :
-                                    print(2)
-                                    result = False
-                                    break
-                    elif term.split(':')[0].strip() == "gd" :
-                        pass
-                else :
-                    print(3)
-                    result = False
-                    break
-        else :
-            print(4)
-            result = False
-        return result
-
-    @staticmethod
-    def extract(cmd = "") :
-        pack = {
-            "target" : None,
-            "range" : [],
-            "guide" : "",
-        }
-        if CommandPack.check(cmd) :
-            for term in cmd.split(';') :
-                if term.split(':')[0].strip() == "tar" :
-                    pack["target"] = term.split(':')[1].strip()
-                elif term.split(':')[0].strip() == "ran" :
-                    for sub in term.split(':')[1].split(',') :
-                        pack["range"].append(sub.strip())
-                elif term.split(':')[0].strip() == "gd" :
-                    pack["guide"] = term.split(':')[1].strip()
-        return pack
-
-
-    def in_range(self, name = "") :
-        result = False
-        if name != "" :
-            pass
         return result
 
 
