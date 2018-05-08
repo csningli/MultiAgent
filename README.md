@@ -13,5 +13,4 @@ The tests will be tightly associated with version 2.0. However, the examples wil
 work for all versions in series 2.
 
 ## Version 1.0
-Version 1.0, the first version of MultiAgent still works as a standalone. However, there is no
-further improvement or support for it.
+Version 1.0, the first version of MultiAgent still works as a standalone. No longer supported. 
