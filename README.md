@@ -21,4 +21,4 @@ work for all versions in series 2.
 Version 1.0, the first version of MultiAgent still works as a standalone. No longer supported.
 
 # Get Started
-Please refer to "2/2.0/README.md" for the details about how to use MultiAgent 2.0.
+To use MultiAgent 2.0, please refer to "2/2.0/README.md" for the detailed instructions.
