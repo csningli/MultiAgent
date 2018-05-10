@@ -2,10 +2,10 @@
 MultiAgent is an open source framework for the simulation of the multiagent systems in the 2D plane.
 
 # Features
-- Agents are implemented as abstract controlling units. Thus they can work without being associated
+- Agents are implemented as abstract controlling units. They can work without being associated
 with any objects that have physical bodies.
-- While running the simulation, all data will be automatically saved under the current working directories.
-These data can be used to restore the simulation, and they are obviously the perfect resources for further
+- While running the simulation, all data will be automatically saved under the current working directory.
+These data can be used to restore the simulation, and they are obviously the perfect resource for further
 analysis.  
 
 # Versions
