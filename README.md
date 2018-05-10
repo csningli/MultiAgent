@@ -1,7 +1,12 @@
 # MultiAgent
-MultiAgent is a open source framework for the simulation of the multiagent systems (with objects movable in the 2D space).
+MultiAgent is an open source framework for the simulation of the multiagent systems in the 2D plane.
 
 # Features
+- Agents are implemented as abstract controlling units. Thus they can work without being associated
+with any objects that have physical bodies.
+- While running the simulation, all data will be automatically saved under the current working directories.
+These data can be used to restore the simulation, and they are obviously the perfect resources for further
+analysis.  
 
 # Versions
 
@@ -13,4 +18,7 @@ The tests will be tightly associated with version 2.0. However, the examples wil
 work for all versions in series 2.
 
 ## Version 1.0
-Version 1.0, the first version of MultiAgent still works as a standalone. No longer supported. 
+Version 1.0, the first version of MultiAgent still works as a standalone. No longer supported.
+
+# Get Started
+Please refer to "2/2.0/README.md" for the details about how to use MultiAgent 2.0.
