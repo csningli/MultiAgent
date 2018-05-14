@@ -35,7 +35,7 @@ If <b>filename</b> is set to empty, i.e.\ <b>""</b>, then the simulation data wi
  	sim.simulate(filename = "")
 
 When a new instance of <b>Simulator</b> is created, you must provide a valid value for the argument
-<b>driver</driver>, which takes instances of <b>Driver</b> as values.
+<b>driver</b>, which takes instances of <b>Driver</b> as values.
 
 	driver = Driver(...)
 	sim = Simulator(driver = driver)
