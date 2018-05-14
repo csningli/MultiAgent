@@ -42,9 +42,13 @@ When a new instance of <b>Simulator</b> is created, you must provide a valid val
 
 To instantiate <b>Driver</b>, the values for two arguments <b>context</b> and <b>schedule</b> should
 be provided. Briefly speaking, <b>context</b> is an instance of <b>Context</b> and it contains
-all the statical information about the physical environment for the simulation, like objects with
-physical bodies and obstacles. The other argument <b>schedule</b> contains the objects/obstacles/agents
-that will be dynamically added during the simulation.  
+all the statical information about the physical environment for the simulation (like objects with
+physical bodies and obstacles). The other argument <b>schedule</b> is an instance of <b>Schedule</b> and
+contains the objects/obstacles/agents that will be dynamically added during the simulation.
+
+	context = Context(...)
+	schedule = Schedule(...)
+	driver = Driver(context = context, schedule = schedule)
 
 # Class Reference
 
