@@ -34,6 +34,18 @@ If <b>filename</b> is set to empty, i.e.\ <b>""</b>, then the simulation data wi
 
  	sim.simulate(filename = "")
 
+When a new instance of <b>Simulator</b> is created, you must provide a valid value for the argument
+<b>driver</driver>, which takes instances of <b>Driver</b> as values.
+
+	driver = Driver(...)
+	sim = Simulator(driver = driver)
+
+To instantiate <b>Driver</b>, the values for two arguments <b>context</b> and <b>schedule</b> should
+be provided. Briefly speaking, <b>context</b> is an instance of <b>Context</b> and it contains
+all the statical information about the physical environment for the simulation, like objects with
+physical bodies and obstacles. The other argument <b>schedule</b> contains the objects/obstacles/agents
+that will be dynamically added during the simulation.  
+
 # Class Reference
 
 ## Simulator
