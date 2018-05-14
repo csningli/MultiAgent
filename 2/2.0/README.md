@@ -63,13 +63,13 @@ It is also convenient to add more objects to <b>context</b> after the instantiat
 
 The obstacles can be added in the similar patterns.
 
-	obt0 = Obstacle(name ="0", a = (0.0, 200.0), b = (200.0, 0.0), radius = 2.0)
-	obt1 = Obstacle(name ="1", a = (200.0, 0.0), b = (0.0, 200.0), radius = 4.0)
+	obt0 = Obstacle(name = "0", a = (0.0, 200.0), b = (200.0, 0.0), radius = 2.0)
+	obt1 = Obstacle(name = "1", a = (200.0, 0.0), b = (0.0, 200.0), radius = 4.0)
 	context = Context(obts = [obt0, obt1])
 
 and
 
-	obt2 = Obstacle(name ="2", a = (0.0, 0.0), b = (200.0, 200.0), radius = 2.0)
+	obt2 = Obstacle(name = "2", a = (0.0, 0.0), b = (200.0, 200.0), radius = 2.0)
 	context.add_obt(obt2)
 
 <b>Agent</b> is the core component in MultiAgent 2.0. The instances of <b>Agent</b> can only
