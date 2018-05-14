@@ -81,7 +81,7 @@ be involved in the simulation through <b>schedule</b>.
 
 The instance <b>agent0</b> is associated with the object which has the same name, i.e.\ <b>obj0</b>.
 In order to change the states of <b>obj0</b>, <b>agent0</b> should be equipped with
-the proper modules. You can find more details in the reference of <b>Agent</b> and <b>Module</b>.
+the proper modules. More details can be found in the reference of <b>Agent</b> and <b>Module</b>.
 
 # Class Reference
 
