@@ -13,7 +13,7 @@ MultiAgent 2 works with Python 3.6. You also need Pygame 1.9.3, Pymunk 5.3.2 and
 
 ## User Anaconda Environment
 If you want to use virtual environment, like Anaconda. It is recommended to create the environment with Python 2.7,
-Pygame 1.9.3 and Pymunk 5.3.1 . The following command will create and activate environment "multiagent2",
+Pygame 1.9.3 and Pymunk 5.3.1. The following command will create and activate environment "multiagent2",
 with the necessary packages installed.
 
 	[user @ MultiAgent/2/] conda env create -f environment.yml
