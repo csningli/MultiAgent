@@ -76,7 +76,7 @@ and
 be involved in the simulation through <b>schedule</b>.
 
 	schedule = Schedule()
-	agent0 = Agent(name ="0")
+	agent0 = Agent(name = "0")
 	schedule.add_agent(agent0)
 
 The instance <b>agent0</b> is associated with the object which has the same name, i.e.\ <b>obj0</b>.
