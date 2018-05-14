@@ -50,6 +50,39 @@ contains the objects/obstacles/agents that will be dynamically added during the 
 	schedule = Schedule(...)
 	driver = Driver(context = context, schedule = schedule)
 
+The objects and obstacles can be added into an instance of <b>Context</b> when the instance is created.
+
+	obj0 = Object(name = "0")
+	obj1 = Object(name = "1")
+	context = Context(objs = [obj0, obj1])
+
+It is also convenient to add more objects to <b>context</b> after the instantiation.
+
+	obj2 = Object(name = "2")
+	context.add_obj(obj2)
+
+The obstacles can be added in the similar patterns.
+
+	obt0 = Obstacle(name ="0", a = (0.0, 200.0), b = (200.0, 0.0), radius = 2.0)
+	obt1 = Obstacle(name ="1", a = (200.0, 0.0), b = (0.0, 200.0), radius = 4.0)
+	context = Context(obts = [obt0, obt1])
+
+and
+
+	obt2 = Obstacle(name ="2", a = (0.0, 0.0), b = (200.0, 200.0), radius = 2.0)
+	context.add_obt(obt2)
+
+<b>Agent</b> is the core component in MultiAgent 2.0. The instances of <b>Agent</b> can only
+be involved in the simulation through <b>schedule</b>.
+
+	schedule = Schedule()
+	agent0 = Agent(name ="0")
+	schedule.add_agent(agent0)
+
+The instance <b>agent0</b> is associated with the object which has the same name, i.e.\ <b>obj0</b>.
+In order to change the states of <b>obj0</b>, <b>agent0</b> should be equipped with
+the proper modules. Please refer to the reference of <b>Agent</b> and <b>Module</b> for more details.
+
 # Class Reference
 
 ## Simulator
