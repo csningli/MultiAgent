@@ -23,10 +23,16 @@ in the file (nothing restored if there is no valid records).
 If you continue with the restored simulation,
 all the new generated data will be saved in the given file.
 
+ 	sim.simulate(filename = "multiagent.data")
+
 If <b>filename</b> is left (or set to) <b>None</b>, then a file will be automatically generated and
 named with the information of the beginning time.
 
+ 	sim.simulate(filename = None)
+
 If <b>filename</b> is set to empty, i.e.\ <b>""</b>, then the simulation data will not be saved.
+
+ 	sim.simulate(filename = "")
 
 # Class Reference
 
