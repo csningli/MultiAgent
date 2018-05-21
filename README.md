@@ -9,9 +9,8 @@ These data can be used to restore the simulation, and they are obviously the per
 analysis.  
 
 # Documents
-We are not organizing the documents in a single page. Instead, you can find the corresponding
-document (usually in a README.md file) when you look into an organizing folder. For example, you can find the document about MultiAgent 2 at "2/README.md", and the document about MultiAgent 2.0
-at "2/2.0/README.md".
+We are not organizing the documents in a single page. Instead, when you look into a version (or subversion) folder, you can find the corresponding document (usually in a README.md file).
+For example, you can find the how to configure the necessary environment for MultiAgent 2 at "2/README.md", and the class references of MultiAgent 2.0 at "2/2.0/README.md".
 
 # Versions
 
