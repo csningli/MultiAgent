@@ -88,7 +88,7 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 ## (class) LookMixin
 
 <b>LookMixin</b> is the mixin class designed to organize the object's
-(or the obstacle's) the attributes related to the display.
+(or the obstacle's) attributes related to the display.
 
 ### Properties
 - <b>stroke_color</b> : The color of the shape stroke.
