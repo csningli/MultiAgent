@@ -91,10 +91,10 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 (or the obstacle's) the attributes related to the display.
 
 ### Properties
-- <font color="blue">astroke_color</font> :
-- <font color="blue">pointer_color</font> :
-- <font color="blue">fill_color</font> :
-- <font color="blue">visible</font> : The boolean variable that indicates whether the object/obstacle is visible (drawn in the display).
+- <b>stroke_color</b> :
+- <b>pointer_color</b> :
+- <b>fill_color</b> :
+- <b>visible</b> : The boolean variable that indicates whether the object/obstacle is visible (drawn in the display).
 
 ### Methods
 
