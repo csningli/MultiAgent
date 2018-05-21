@@ -4,7 +4,7 @@
 
 import sys, os, time, subprocess
 
-tests = ["test_object.py", "test_agent.py", "test_message.py", "test_request.py",
+tests = ["test_lookmixin.py", "test_object.py", "test_obstacle.py", "test_agent.py", "test_message.py", "test_request.py",
         "test_oracle.py", "test_timer.py", "test_context.py",  "test_schedule.py",
         "test_driver.py", "test_simulator.py"]
 

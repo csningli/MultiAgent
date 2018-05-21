@@ -13,7 +13,7 @@ from multiagent import *
 def test_agent() :
     '''
     >>> test_agent()
-    Agent: <<multiagent.Agent name=test_agent mods_num=0>>
+    Agent: <<multiagent.Agent name=test_agent mods_num=1>>
     '''
     agent = Agent(name = "test_agent")
     print("Agent: %s" % agent.info())

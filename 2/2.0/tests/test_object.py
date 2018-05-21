@@ -10,7 +10,7 @@ sys.path.append("../py")
 from multiagent import *
 
 
-def test_obj() :
+def test_obj_basic() :
     '''
     >>> test_obj()
     Object: <<multiagent.Object name=test_obj>>
@@ -23,39 +23,23 @@ def test_obj() :
     Angular Velocity: 2.0
     Force: (0.0, 5.0)
     '''
-    obj = Object(name = "test_obj")
+    obj = Object(name = "0", mass = 0.5, radius = 5.0)
+    print("Object: %s" % obj.info())
+    print("Mass : %.1f" % obj.mass)
+    print("Radius : %.1f" % obj.radius)
     obj.mass = 10.0
+    print("New Mass : %.1f" % obj.mass)
     obj.pos = (1.0, 0.0)
     obj.angle = 1.0
     obj.vel = (1.0, 0.0)
     obj.avel = 2.0
     obj.force = (0.0, 5.0)
-    print("Object: %s" % obj.info())
-    print("Mass : %.1f" % obj.mass)
-    print("Radius : %.1f" % obj.radius)
     print("Position : (%.1f, %.1f)" % (obj.pos[0], obj.pos[1]))
     print("Angle : %.1f" % obj.angle)
     print("Rotation: (%.2f, %.2f)" % (obj.rot[0], obj.rot[1]))
     print("Velocity: (%.1f, %.1f)" % (obj.vel[0], obj.vel[1]))
     print("Angular Velocity: %.1f" % obj.avel)
     print("Force: (%.1f, %.1f)" % (obj.force[0], obj.force[1]))
-
-
-def test_obt() :
-    '''
-    >>> test_obt()
-    Obstacle: <<multiagent.Obstacle name=test_obt>>
-    A: (0.0, 1.0)
-    B: (1.0, 0.0)
-    Radius: 2.0
-    Ends: (0.0, 1.0), (1.0, 0.0)
-    '''
-    obt = Obstacle(name ="test_obt", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)
-    print("Obstacle: %s" % obt.info())
-    print("A: (%.1f, %.1f)" % (obt.a[0], obt.a[1]))
-    print("B: (%.1f, %.1f)" % (obt.b[0], obt.b[1]))
-    print("Radius: %.1f" % obt.radius)
-    print("Ends: (%.1f, %.1f), (%.1f, %.1f)" % (obt.a[0], obt.a[1], obt.b[0], obt.b[1]))
 
 
 if __name__ == '__main__' :
