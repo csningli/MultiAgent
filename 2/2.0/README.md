@@ -85,7 +85,7 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 
 # Class Reference
 
-## LookMixin
+## (class) LookMixin
 
 <b>LookMixin</b> is the mixin class designed to organize the object's
 (or the obstacle's) the attributes related to the display.
@@ -100,10 +100,10 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 
 None.
 
-## Object
-## Obstacle
-## Context
-## Agent
-## Schedule
-## Driver
-## Simulator
+## (class) Object
+## (class) Obstacle
+## (class) Context
+## (class) Agent
+## (class) Schedule
+## (class) Driver
+## (class) Simulator
