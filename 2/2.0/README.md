@@ -91,14 +91,14 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 (or the obstacle's) the attributes related to the display.
 
 ### Properties
-- <style color="blue">stroke_color</style> :
-- <b>pointer_color</b> :
-- <b>fill_color</b> :
+- <style color="blue">stroke_color</style> : The color of the shape stroke.
+- <b>pointer_color</b> : The color of the object's pointer.
+- <b>fill_color</b> : The color of the object's solid center.
 - <b>visible</b> : The boolean variable that indicates whether the object/obstacle is visible (drawn in the display).
 
 ### Methods
 
-None
+None.
 
 ## Object
 ## Obstacle
