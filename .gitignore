@@ -1,6 +1,7 @@
 # MultiAgent
 *.data
 *.db
+doc/
 
 # Vim temporaries 
 *.swo
