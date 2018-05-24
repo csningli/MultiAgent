@@ -9,7 +9,6 @@ sys.path.append("../py")
 
 from multiagent import *
 
-
 def test_obj_basic() :
     '''
     >>> test_obj_basic()
