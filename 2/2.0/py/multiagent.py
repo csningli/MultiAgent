@@ -158,17 +158,28 @@ class Object(Circle, LookMixin) :
 
     @prop.setter
     def prop(self, p) :
-        self.mass = float(p["mass"])
-        self.angle = float(p["angle"])
-        self.avel = float(p["avel"])
-        self.visible = bool(p["visible"])
-        self.pos = tuple([float(i) for i in p["pos"].strip("(").strip(")").split(",")])
-        self.rot = tuple([float(i) for i in p["rot"].strip("(").strip(")").split(",")])
-        self.vel = tuple([float(i) for i in p["vel"].strip("(").strip(")").split(",")])
-        self.force = tuple([float(i) for i in p["force"].strip("(").strip(")").split(",")])
-        self.pointer_color = tuple([int(i) for i in p["pcolor"].strip("(").strip(")").split(",")])
-        self.fill_color = tuple([int(i) for i in p["fcolor"].strip("(").strip(")").split(",")])
-        self.stroke_color = tuple([int(i) for i in p["scolor"].strip("(").strip(")").split(",")])
+        if "mass" in p.keys() :
+            self.mass = float(p["mass"])
+        if "angle" in p.keys() :
+            self.angle = float(p["angle"])
+        if "avel" in p.keys() :
+            self.avel = float(p["avel"])
+        if "visible" in p.keys() :
+            self.visible = bool(p["visible"])
+        if "pos" in p.keys() :
+            self.pos = tuple([float(i) for i in p["pos"].strip("(").strip(")").split(",")])
+        if "rot" in p.keys() :
+            self.rot = tuple([float(i) for i in p["rot"].strip("(").strip(")").split(",")])
+        if "vel" in p.keys() :
+            self.vel = tuple([float(i) for i in p["vel"].strip("(").strip(")").split(",")])
+        if "force" in p.keys() :
+            self.force = tuple([float(i) for i in p["force"].strip("(").strip(")").split(",")])
+        if "pcolor" in p.keys() :
+            self.pointer_color = tuple([int(i) for i in p["pcolor"].strip("(").strip(")").split(",")])
+        if "fcolor" in p.keys() :
+            self.fill_color = tuple([int(i) for i in p["fcolor"].strip("(").strip(")").split(",")])
+        if "scolor" in p.keys() :
+            self.stroke_color = tuple([int(i) for i in p["scolor"].strip("(").strip(")").split(",")])
 
     def draw(self, screen) :
         if self.visible == True :
