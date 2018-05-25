@@ -165,7 +165,13 @@ and hence you should be cautious.
 ### Methods
 
 - <b>info(<i>self</i>)</b> : return a string that encapsulates the instance information (class name and instance name).
+
+		info = obj.info # 'info' is "<<multiagent.Object name=0>>"
+
 - <b>draw(<i>self</i>, screen)</b> : draw the Object instance on the given screen.
+
+		screen = pygame.display.set_mode((width, height))
+		obj.draw(screen = screen)
 
 ## (class) Obstacle
 ## (class) Context
