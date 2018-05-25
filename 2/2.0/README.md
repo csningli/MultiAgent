@@ -92,7 +92,9 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 
 ### Properties
 - <b>stroke_color</b> : A triple of integers to indicate the color of the shape stroke.
-		alook.stroke_color = (0, 0, 0)
+
+	look.stroke_color = (0, 0, 0)
+
 - <b>pointer_color</b> : A triple of integers to indicate the color of the object's pointer.
 - <b>fill_color</b> : A triple of integers to indicate the color of the object's solid center.
 - <b>visible</b> : A boolean variable that indicates whether the object/obstacle is visible (drawn in the display).
