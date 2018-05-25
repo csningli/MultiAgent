@@ -170,7 +170,7 @@ and hence you should be cautious.
 
 - <b>draw(<i>self</i>, screen)</b> : draw the Object instance on the given screen.
 
-		screen = pygame.display.set_mode((width, height))
+		screen = pygame.display.set_mode((800, 600))
 		obj.draw(screen = screen)
 
 ## (class) Obstacle
