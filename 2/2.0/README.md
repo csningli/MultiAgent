@@ -92,6 +92,7 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 
 ### Properties
 - <b>stroke_color</b> : A triple of integers to indicate the color of the shape stroke.
+	look.stroke_color = (0, 0, 0)
 - <b>pointer_color</b> : A triple of integers to indicate the color of the object's pointer.
 - <b>fill_color</b> : A triple of integers to indicate the color of the object's solid center.
 - <b>visible</b> : A boolean variable that indicates whether the object/obstacle is visible (drawn in the display).
@@ -101,6 +102,25 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 None.
 
 ## (class) Object
+
+<b>Object</b> is the most primary class in MultiAgent 2.0. It has a rigid body,
+and hence responsible for interacting with the physical context. In MultiAgent 2.0,
+there is only one shape for the objects, which is <i>circle</i>. The radius of the
+circle can only be configured while the initializing. For the other properties,
+you can change them through the corresponding interfaces.
+
+### Properties
+- <b>name</b> : A <b>non-empty</b> string to identify the Object instance.
+Objects' names will be the only identification while binding to the corresponding agents,
+and hence you should be cautious.  
+- <b>mass</b> : A single float number to indicate the mass.
+- <b>pos</b> : A pair of float numbers to indicate current position.
+- <b>vel</b> : A pair of float numbers to indicate current velocity.
+
+### Methods
+
+- <b>draw(<i>self</i>, screen)</b> : draw the Object instance on the given screen.
+
 ## (class) Obstacle
 ## (class) Context
 ## (class) Agent
