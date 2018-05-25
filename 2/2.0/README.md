@@ -88,16 +88,29 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 ## (class) LookMixin
 
 <b>LookMixin</b> is the mixin class designed to organize the object's
-(or the obstacle's) attributes related to the display.
+(or the obstacle's) attributes related to the display. The colors are
+represented in RGBA tuples.
+
+### Initialization
+
+	look = LookMixin()
 
 ### Properties
-- <b>stroke_color</b> : A triple of integers to indicate the color of the shape stroke.
+- <b>stroke_color</b> : A tuple of four integers to indicate the color of the shape stroke.
 
-		look.stroke_color = (0, 0, 0)
+		look.stroke_color = (0, 0, 0, 255)
 
-- <b>pointer_color</b> : A triple of integers to indicate the color of the object's pointer.
-- <b>fill_color</b> : A triple of integers to indicate the color of the object's solid center.
+- <b>pointer_color</b> : A tuple of four integers to indicate the color of the object's pointer.
+
+		look.pointer_color = (0, 255, 0, 255)
+
+- <b>fill_color</b> : A tuple of four integers to indicate the color of the object's solid center.
+
+		look.fill_color = (255, 255, 255, 255)
+
 - <b>visible</b> : A boolean variable that indicates whether the object/obstacle is visible (drawn in the display).
+
+		look.visible = False
 
 ### Methods
 
@@ -111,16 +124,47 @@ there is only one shape for the objects, which is <i>circle</i>. The radius of t
 circle can only be configured while the initializing. For the other properties,
 you can change them through the corresponding interfaces.
 
+### Initialization
+
+	obj = Object(name = "0", mass = 1.0, radius = 10.0)
+	# 'name' is mandatory.
+	# 'mass' is 1.0 by default.
+	# 'radius' is 10.0 by default.
+
 ### Properties
 - <b>name</b> : A <b>non-empty</b> string to identify the Object instance.
 Objects' names will be the only identification while binding to the corresponding agents,
 and hence you should be cautious.  
+
+		obj.name = "0"
+
 - <b>mass</b> : A single float number to indicate the mass.
-- <b>pos</b> : A pair of float numbers to indicate current position.
-- <b>vel</b> : A pair of float numbers to indicate current velocity.
+
+		obj.mass = 5.0
+
+- <b>pos</b> : A pair of float numbers to indicate the current position.
+
+		obj.pos = (1.0, 0.0)
+
+- <b>vel</b> : A pair of float numbers to indicate the current velocity.
+
+		obj.vel = (0.0, 1.0)
+
+- <b>force</b> : A pair of float numbers to indicate the force applied to the center of mass.
+
+		obj.force = (0.5, 0.5)
+
+- <b>angle</b> : A single float number to indicate the current orientation (angle from the east).
+
+		obj.angle = 0.785  # 0.785 = pi/4.0
+
+- <b>avel</b> : A single float number to indicate the angular velocity (counter-clockwise).
+
+		obj.avel = 0.1  
 
 ### Methods
 
+- <b>info(<i>self</i>)</b> : return a string that encapsulates the instance information (class name and instance name).
 - <b>draw(<i>self</i>, screen)</b> : draw the Object instance on the given screen.
 
 ## (class) Obstacle

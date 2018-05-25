@@ -12,18 +12,18 @@ from multiagent import *
 def test_lookmixin() :
     '''
     >>> test_lookmixin()
-    Stroke Color : (0, 0, 0)
-    Pointer Color : (0, 1, 0)
-    Fill Color : (1, 1, 1)
+    Stroke Color : (0, 0, 0, 255)
+    Pointer Color : (0, 255, 0, 255)
+    Fill Color : (255, 255, 255, 255)
     Pointer Color : False
     '''
     look = LookMixin()
-    look.stroke_color = (0, 0, 0)
-    print("Stroke Color : (%d, %d, %d)" % look.stroke_color)
-    look.pointer_color = (0, 1, 0)
-    print("Pointer Color : (%d, %d, %d)" % look.pointer_color)
-    look.fill_color = (1, 1, 1)
-    print("Fill Color : (%d, %d, %d)" % look.fill_color)
+    look.stroke_color = (0, 0, 0, 255)
+    print("Stroke Color : (%d, %d, %d, %d)" % look.stroke_color)
+    look.pointer_color = (0, 255, 0, 255)
+    print("Pointer Color : (%d, %d, %d, %d)" % look.pointer_color)
+    look.fill_color = (255, 255, 255, 255)
+    print("Fill Color : (%d, %d, %d, %d)" % look.fill_color)
     look.visible = False
     print("Pointer Color : %r" % look.visible)
 
