@@ -79,7 +79,7 @@ class Object(Circle, LookMixin) :
     def name(self, name) :
         self.__name = name
 
-    # uncomment the property mass will return or set the mass of the body directly.
+    # uncomment the property mass, then you can get or set the mass of the body directly.
 
     #@property
     #def mass(self) :
@@ -219,17 +219,9 @@ class Obstacle(Segment, LookMixin) :
     def start(self) :
         return tuple(self.a)
 
-    @start.setter
-    def start(self, a) :
-        self.a = a
-
     @property
     def end(self) :
         return tuple(self.b)
-
-    @end.setter
-    def end(self, b) :
-        self.b = b
 
     @property
     def prop(self) : # props is in key-value dict.
@@ -246,10 +238,14 @@ class Obstacle(Segment, LookMixin) :
 
     @prop.setter
     def prop(self, p) :
-        self.pointer_color = tuple([int(i) for i in p["pcolor"].strip("(").strip(")").split(",")])
-        self.fill_color = tuple([int(i) for i in p["fcolor"].strip("(").strip(")").split(",")])
-        self.stroke_color = tuple([int(i) for i in p["scolor"].strip("(").strip(")").split(",")])
-        self.visible = bool(p["visible"])
+        if "pcolor" in p.keys() :
+            self.pointer_color = tuple([int(i) for i in p["pcolor"].strip("(").strip(")").split(",")])
+        if "fcolor" in p.keys() :
+            self.fill_color = tuple([int(i) for i in p["fcolor"].strip("(").strip(")").split(",")])
+        if "scolor" in p.keys() :
+            self.stroke_color = tuple([int(i) for i in p["scolor"].strip("(").strip(")").split(",")])
+        if "visible" in p.keys() :
+            self.visible = bool(p["visible"])
 
     def draw(self, screen) :
         if self.visible == True :

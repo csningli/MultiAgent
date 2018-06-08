@@ -9,22 +9,58 @@ sys.path.append("../py")
 
 from multiagent import *
 
-def test_obt() :
+def test_obt_basic() :
     '''
-    >>> test_obt()
-    Obstacle: <<multiagent.Obstacle name=test_obt>>
-    A: (0.0, 1.0)
-    B: (1.0, 0.0)
+    >>> test_obt_basic()
+    Initialization.
+    Obstacle: <<multiagent.Obstacle name=0>>
+    A: (1.0, 0.0)
+    B: (0.0, 1.0)
     Radius: 2.0
-    Ends: (0.0, 1.0), (1.0, 0.0)
+    Change values of the properties.
+    Name : 1
     '''
-    obt = Obstacle(name ="test_obt", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0)
+    print("Initialization.")
+    obt = Obstacle(name ="0", a = (1.0, 0.0), b = (0.0, 1.0), radius = 2.0)
     print("Obstacle: %s" % obt.info())
     print("A: (%.1f, %.1f)" % (obt.a[0], obt.a[1]))
     print("B: (%.1f, %.1f)" % (obt.b[0], obt.b[1]))
     print("Radius: %.1f" % obt.radius)
-    print("Ends: (%.1f, %.1f), (%.1f, %.1f)" % (obt.a[0], obt.a[1], obt.b[0], obt.b[1]))
+    print("Change values of the properties.")
+    obt.name = "1"
+    print("Name : %s" % obt.name)
 
+def test_obt_prop() :
+    '''
+    >>> test_obt_prop()
+    Initialization.
+    Obstacle: <<multiagent.Obstacle name=0>>
+    A: (1.0, 0.0)
+    B: (0.0, 1.0)
+    Radius: 1.0
+    Change properties by directly apply 'obt.prop = prop', where 'prop' is a map storing the new values.
+    Visible: True
+    Pointer Color: (1, 0, 0)
+    Fill Color: (0, 1, 0)
+    Stroke Color: (0, 0, 1)
+    '''
+    print("Initialization.")
+    obt = Obstacle(name ="0", a = (1.0, 0.0), b = (0.0, 1.0))
+    print("Obstacle: %s" % obt.info())
+    print("A: (%.1f, %.1f)" % (obt.a[0], obt.a[1]))
+    print("B: (%.1f, %.1f)" % (obt.b[0], obt.b[1]))
+    print("Radius: %.1f" % obt.radius)
+    print("Change properties by directly apply 'obt.prop = prop', where 'prop' is a map storing the new values.")
+    prop = {}
+    prop["visible"] = "True"
+    prop["pcolor"] = "(1, 0, 0)"
+    prop["fcolor"] = "(0, 1, 0)"
+    prop["scolor"] = "(0, 0, 1)"
+    obt.prop = prop
+    print("Visible: %r" % obt.visible)
+    print("Pointer Color: (%d, %d, %d)" % (obt.pointer_color[0], obt.pointer_color[1], obt.pointer_color[2]))
+    print("Fill Color: (%d, %d, %d)" % (obt.fill_color[0], obt.fill_color[1], obt.fill_color[2]))
+    print("Stroke Color: (%d, %d, %d)" % (obt.stroke_color[0], obt.stroke_color[1], obt.stroke_color[2]))
 
 if __name__ == '__main__' :
     result = doctest.testmod()
