@@ -272,10 +272,6 @@ class OracleSpace(Space) :
     def info(self) :
         return "<<multiagent.%s objs_num=%d obts_num=%d>>" % (type(self).__name__, len(self.__objs), len(self.__obts))
 
-    def clear(self) :
-        self.__objs = {}
-        self.__obts = {}
-
     @property
     def objs(self) :
         return self.__objs
