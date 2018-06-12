@@ -27,21 +27,26 @@ def test_timer_basic() :
     timer.read = 0.04
     print("Read: %.4f" % timer.read)
 
+    
 def test_timer_tick() :
     '''
     >>> test_timer_tick()
     Initialization.
     Timer: <<multiagent.Timer read=0.0000 delta=0.0100>>
-    Tick
+    Tick without parameter.
     Read: 0.0100
+    Tick with parameter.
+    Read: 0.0600
     '''
     print("Initialization.")
     timer = Timer()
     print("Timer: %s" % timer.info())
-    print("Tick")
+    print("Tick without parameter.")
     timer.tick()
     print("Read: %.4f" % timer.read)
-
+    print("Tick with parameter.")
+    timer.tick(delta = 0.05)
+    print("Read: %.4f" % timer.read)
 
 
 if __name__ == '__main__' :

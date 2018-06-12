@@ -290,9 +290,9 @@ class OracleSpace(Space) :
                 "vel" : None,
                 "avel" : None,
                 "force" : None,
-            }) and obj.name not in self.__objs.keys() :
+            }) and obj.name not in self.objs.keys() :
             self.add(obj.body, obj)
-            self.__objs[obj.name] = obj
+            self.objs[obj.name] = obj
 
     def add_obt(self, obt) :
         if check_attrs(obt, {
@@ -300,15 +300,15 @@ class OracleSpace(Space) :
                 "a" : None,
                 "b" : None,
                 "radius" : None,
-            }) and obt.name not in self.__obts.keys() :
+            }) and obt.name not in self.obts.keys() :
             self.add(obt.body, obt)
-            self.__obts[obt.name] = obt
+            self.obts[obt.name] = obt
 
     def get_obj_with(self, name) :
-        return self.__objs.get(str(name), None)
+        return self.objs.get(str(name), None)
 
     def get_obt_with(self, name) :
-        return self.__obts.get(str(name), None)
+        return self.obts.get(str(name), None)
 
     def get_objs_at(self, c, d = 0, dist = ppdist_l2) :
         objs = []
@@ -347,12 +347,12 @@ class OracleSpace(Space) :
 
     def clear(self, dist) :
         names_of_dead = []
-        for name, obj in self.__objs.items() :
+        for name, obj in self.objs.items() :
             if ppdist_l2(obj.pos, (0, 0)) > dist :
                 self.remove(obj.body)
                 names_of_dead.append(name)
         for name in names_of_dead :
-            del(self.__objs[name])
+            del(self.objs[name])
         return names_of_dead
 
 
@@ -416,12 +416,12 @@ class Request(object) :
 
     def add_msg(self, msg) :
         if check_attrs(msg, {"src" : None, "dest" : None, "key" : None, "value" : None}) :
-            if msg.dest not in self.__content.keys() :
-                self.__content[str(msg.dest)] = [] # msgs are organized according to the dest.
-            self.__content[str(msg.dest)].append(msg)
+            if msg.dest not in self.content.keys() :
+                self.content[str(msg.dest)] = [] # msgs are organized according to the dest.
+            self.content[str(msg.dest)].append(msg)
 
     def get_msgs(self, dest) :
-        return self.__content.get(str(dest), [])
+        return self.content.get(str(dest), [])
 
 
 class Response(Request) :
@@ -454,9 +454,9 @@ class Timer(object) :
 
     def tick(self, delta = None) :
         if delta is not None :
-            self.__read += delta
+            self.read += delta
         else :
-            self.__read += self.__delta
+            self.read += self.delta
 
 
 class Context(object) :
@@ -490,7 +490,7 @@ class Context(object) :
             self.add_obj(obj)
 
         for obt in obts :
-            self.add_obj(obj)
+            self.add_obt(obt)
 
         self.__reqt = None
         self.__resp = None
@@ -504,6 +504,10 @@ class Context(object) :
         return self.__oracle
 
     @property
+    def timer(self) :
+        return self.__timer
+
+    @property
     def reqt(self) :
         return self.__reqt
 
@@ -513,11 +517,11 @@ class Context(object) :
 
     @property
     def time(self) :
-        return self.__timer.read
+        return self.timer.read
 
     @property
     def timer_delta(self) :
-        return self.__timer.delta
+        return self.timer.delta
 
     @property
     def obj_props(self) : # obj_props is in name-dict dict.
@@ -556,21 +560,22 @@ class Context(object) :
 
     @paras.setter
     def paras(self, p) :
-        self.__timer.read = float(p["time"])
+        if "time" in p.keys() :
+            self.__timer.read = float(p["time"])
 
     def handle_reqt(self, reqt) :
-        self.__reqt = reqt
-        self.__resp = Response()
+        self.reqt = reqt
+        self.resp = Response()
 
         # interaction between the context and the agents
 
         msgs = {}
-        for msg in self.__reqt.get_msgs(dest = "") :
+        for msg in self.reqt.get_msgs(dest = "") :
             if msg.src not in msgs.keys() :
                 msgs[msg.src] = []
             msgs[msg.src].append(msg)
 
-        for name, obj in self.__oracle.objs.items() :
+        for name, obj in self.oracle.objs.items() :
             for msg in msgs.get(name, []) :
                 if msg.key == "vel" :
                     obj.vel = msg.value
@@ -586,7 +591,7 @@ class Context(object) :
                     obj.fill_color = tuple(msg.value)
             for key, value in {"pos" : obj.pos, "angle" : obj.angle, "vel" : obj.vel, "avel" : obj.avel,
                     "force" : obj.force, "color" : obj.fill_color}.items() :
-                self.__resp.add_msg(Message(dest = name, key = key, value = value))
+                self.resp.add_msg(Message(dest = name, key = key, value = value))
 
         # handle the communication signals and the radar signals.
 
@@ -599,52 +604,52 @@ class Context(object) :
                 elif msg.key == "radar" :
                     radar_src_dist[name] = msg.value
 
-        for name in self.__oracle.objs.keys() :
-            self.__resp.add_msg(Message(dest = name, key = "radio", value = copy.copy(radio_msgs)))
+        for name in self.oracle.objs.keys() :
+            self.resp.add_msg(Message(dest = name, key = "radio", value = copy.copy(radio_msgs)))
 
         for src, dist in radar_src_dist.items() :
-            obj = self.__oracle.objs.get(src, None)
+            obj = self.oracle.objs.get(src, None)
             if obj is not None :
-                self.__resp.add_msg(Message(dest = src, key = "radar", value = self.__oracle.touch(obj.pos, dist)))
+                self.resp.add_msg(Message(dest = src, key = "radar", value = self.__oracle.touch(obj.pos, dist)))
             else :
-                self.__resp.add_msg(Message(dest = src, key = "radar", value = self.__oracle.touch((0, 0), dist)))
+                self.resp.add_msg(Message(dest = src, key = "radar", value = self.__oracle.touch((0, 0), dist)))
 
         # run the physical engine and update the time recorded in the context
 
-        self.__oracle.step(self.__timer.delta)
-        self.__timer.tick()
+        self.oracle.step(self.timer.delta)
+        self.timer.tick()
 
-        return self.__resp
+        return self.resp
 
     def handle_cmds(self, cmds) :
         pass
 
     def draw(self, screen) :
-        self.__oracle.draw(screen)
+        self.oracle.draw(screen)
 
     def add_obj(self, obj) :
-        return self.__oracle.add_obj(obj)
+        return self.oracle.add_obj(obj)
 
     def remove_obj(self, name) :
         pass
 
     def add_obt(self, obt) :
-        return self.__oracle.add_obt(obt)
+        return self.oracle.add_obt(obt)
 
     def remove_obt(self, name) :
         pass
 
     def get_time_by_steps(self, steps) :
-        return self.__timer.delta * steps
+        return self.timer.delta * steps
 
     def get_objs_at(self, pos, d = 0) :
-        return self.__oracle.get_objs_at(tuple(pos), d)
+        return self.oracle.get_objs_at(tuple(pos), d)
 
     def get_obts_at(self, pos, d = 0) :
-        return self.__oracle.get_obts_at(tuple(pos), d)
+        return self.oracle.get_obts_at(tuple(pos), d)
 
     def clear(self, dist) :
-        return self.__oracle.clear(dist)
+        return self.oracle.clear(dist)
 
 
 class Memory(object) :
