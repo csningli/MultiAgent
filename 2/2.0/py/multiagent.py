@@ -498,7 +498,6 @@ class Context(object) :
     def info(self) :
         return "<<multiagent.%s has_oracle=%d>>" % (type(self).__name__, self.__oracle is not None)
 
-
     @property
     def oracle(self) :
         return self.__oracle
@@ -511,9 +510,17 @@ class Context(object) :
     def reqt(self) :
         return self.__reqt
 
+    @reqt.setter
+    def reqt(self, value) :
+        self.__reqt = value
+
     @property
     def resp(self) :
         return self.__resp
+
+    @resp.setter
+    def resp(self, value) :
+        self.__resp = value
 
     @property
     def time(self) :
@@ -656,13 +663,18 @@ class Memory(object) :
     def __init__(self) :
         self.__content = {}
 
+    def info(self) :
+        return "<<multiagent.%s content_size=%d>>" % (type(self).__name__, len(self.content))
+
     @property
     def content(self) :
-        return copy.copy(self.__content)
+        return self.__content
 
     @content.setter
     def content(self, c) :
-        self.__content = copy.copy(c)
+        if check_attrs(c, {"items" : {"__iter__" : None}}) :
+            for key, value in c.items() :
+                self.reg(key, value)
 
     def reg(self, key, value) :
         self.__content[key] = value
