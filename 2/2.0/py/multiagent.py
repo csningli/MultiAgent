@@ -687,13 +687,17 @@ class Module(object) :
     def __init__(self) :
         self.__mem = Memory()
 
+    def info(self) :
+        return "<<multiagent.%s memory_size=%d>>" % (type(self).__name__, len(self.mem.content))
+
     @property
     def mem(self) : # module's memory will be set with the memory of the host agent.
         return self.__mem
 
     @mem.setter
     def mem(self, mem) :
-        self.__mem = mem
+        if check_attrs(mem, {"content" : None, "reg" : None, "read" : None}) :
+            self.__mem = mem
 
     def sense(self, reqt) : # can directly access or modify "mem" - the request received by the host agent
         pass
@@ -705,53 +709,52 @@ class Module(object) :
         pass
 
     def get_pos(self) :
-        return self.__mem.read("pos", None)
+        return self.mem.read("pos", None)
 
     def get_angle(self) :
-        return self.__mem.read("angle", None)
+        return self.mem.read("angle", None)
 
     def get_vel(self) :
-        return self.__mem.read("vel", None)
+        return self.mem.read("vel", None)
 
     def apply_vel(self, vel) :
-        self.__mem.reg(key = "vel", value = vel)
+        self.mem.reg(key = "vel", value = vel)
 
     def get_avel(self) :
-        return self.__mem.read("avel", None)
+        return self.mem.read("avel", None)
 
     def apply_avel(self, avel) :
-        self.__mem.reg(key = "avel", value = avel)
+        self.mem.reg(key = "avel", value = avel)
 
     def get_force(self) :
-        return self.__mem.read("force", None)
+        return self.mem.read("force", None)
 
     def apply_force(self, force) :
-        self.__mem.reg(key = "force", value = force)
+        self.mem.reg(key = "force", value = force)
 
     def get_color(self) :
-        return self.__mem.read("color", None)
+        return self.mem.read("color", None)
 
     def apply_color(self, color) :
-        self.__mem.reg(key = "color", value = color)
+        self.mem.reg(key = "color", value = color)
 
     def get_radio_in_msgs(self) :
-        return self.__mem.read("radio_in", [])
+        return self.mem.read("radio_in", [])
 
     def get_radio_out_msg(self) :
-        return self.__mem.read("radio_out", None)
+        return self.mem.read("radio_out", None)
 
     def set_radio_out_msg(self, msg) :
-        self.__mem.reg("radio_out", msg)
+        self.mem.reg("radio_out", msg)
 
     def get_radar_detect(self) :
-        return self.__mem.read("radar_detect", [])
+        return self.mem.read("radar_detect", [])
 
     def get_radar_dist(self) :
-        return self.__mem.read("radar_dist", None)
+        return self.mem.read("radar_dist", None)
 
     def set_radar_dist(self, dist) :
-        self.__mem.reg("radar_dist", dist)
-
+        self.mem.reg("radar_dist", dist)
 
 class ObjectModule(Module) :
     def __init__(self) :

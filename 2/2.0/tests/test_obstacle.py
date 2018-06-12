@@ -40,9 +40,9 @@ def test_obt_prop() :
     Radius: 1.0
     Change properties by directly apply 'obt.prop = prop', where 'prop' is a map storing the new values.
     Visible: True
-    Pointer Color: (1, 0, 0)
-    Fill Color: (0, 1, 0)
-    Stroke Color: (0, 0, 1)
+    Pointer Color: (1, 0, 0, 255)
+    Fill Color: (0, 1, 0, 255)
+    Stroke Color: (0, 0, 1, 255)
     '''
     print("Initialization.")
     obt = Obstacle(name ="0", a = (1.0, 0.0), b = (0.0, 1.0))
@@ -53,14 +53,14 @@ def test_obt_prop() :
     print("Change properties by directly apply 'obt.prop = prop', where 'prop' is a map storing the new values.")
     prop = {}
     prop["visible"] = "True"
-    prop["pcolor"] = "(1, 0, 0)"
-    prop["fcolor"] = "(0, 1, 0)"
-    prop["scolor"] = "(0, 0, 1)"
+    prop["pcolor"] = "(1, 0, 0, 255)"
+    prop["fcolor"] = "(0, 1, 0, 255)"
+    prop["scolor"] = "(0, 0, 1, 255)"
     obt.prop = prop
     print("Visible: %r" % obt.visible)
-    print("Pointer Color: (%d, %d, %d)" % (obt.pointer_color[0], obt.pointer_color[1], obt.pointer_color[2]))
-    print("Fill Color: (%d, %d, %d)" % (obt.fill_color[0], obt.fill_color[1], obt.fill_color[2]))
-    print("Stroke Color: (%d, %d, %d)" % (obt.stroke_color[0], obt.stroke_color[1], obt.stroke_color[2]))
+    print("Pointer Color: (%d, %d, %d, %d)" % (obt.pointer_color[0], obt.pointer_color[1], obt.pointer_color[2], obt.pointer_color[3]))
+    print("Fill Color: (%d, %d, %d, %d)" % (obt.fill_color[0], obt.fill_color[1], obt.fill_color[2], obt.fill_color[3]))
+    print("Stroke Color: (%d, %d, %d, %d)" % (obt.stroke_color[0], obt.stroke_color[1], obt.stroke_color[2], obt.fill_color[3]))
 
 if __name__ == '__main__' :
     result = doctest.testmod()

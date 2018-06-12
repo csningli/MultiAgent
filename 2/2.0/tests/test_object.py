@@ -64,9 +64,9 @@ def test_obj_prop() :
     Angular Velocity: 2.0
     Force: (0.0, 5.0)
     Visible: True
-    Pointer Color: (1, 0, 0)
-    Fill Color: (0, 1, 0)
-    Stroke Color: (0, 0, 1)
+    Pointer Color: (1, 0, 0, 255)
+    Fill Color: (0, 1, 0, 255)
+    Stroke Color: (0, 0, 1, 255)
     '''
     print("Initialization.")
     obj = Object(name = "0")
@@ -82,9 +82,9 @@ def test_obj_prop() :
     prop["avel"] = "2.0"
     prop["force"] = "(0.0, 5.0)"
     prop["visible"] = "True"
-    prop["pcolor"] = "(1, 0, 0)"
-    prop["fcolor"] = "(0, 1, 0)"
-    prop["scolor"] = "(0, 0, 1)"
+    prop["pcolor"] = "(1, 0, 0, 255)"
+    prop["fcolor"] = "(0, 1, 0, 255)"
+    prop["scolor"] = "(0, 0, 1, 255)"
     obj.prop = prop
     print("Mass : %.1f" % obj.mass)
     print("Position : (%.1f, %.1f)" % (obj.pos[0], obj.pos[1]))
@@ -94,9 +94,9 @@ def test_obj_prop() :
     print("Angular Velocity: %.1f" % obj.avel)
     print("Force: (%.1f, %.1f)" % (obj.force[0], obj.force[1]))
     print("Visible: %r" % obj.visible)
-    print("Pointer Color: (%d, %d, %d)" % (obj.pointer_color[0], obj.pointer_color[1], obj.pointer_color[2]))
-    print("Fill Color: (%d, %d, %d)" % (obj.fill_color[0], obj.fill_color[1], obj.fill_color[2]))
-    print("Stroke Color: (%d, %d, %d)" % (obj.stroke_color[0], obj.stroke_color[1], obj.stroke_color[2]))
+    print("Pointer Color: (%d, %d, %d, %d)" % (obj.pointer_color[0], obj.pointer_color[1], obj.pointer_color[2], obj.pointer_color[3]))
+    print("Fill Color: (%d, %d, %d, %d)" % (obj.fill_color[0], obj.fill_color[1], obj.fill_color[2], obj.fill_color[3]))
+    print("Stroke Color: (%d, %d, %d, %d)" % (obj.stroke_color[0], obj.stroke_color[1], obj.stroke_color[2], obj.stroke_color[3]))
 
 
 if __name__ == '__main__' :
