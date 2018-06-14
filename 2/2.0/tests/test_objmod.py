@@ -89,7 +89,7 @@ def test_objmod_act() :
     '''
     >>> test_objmod_act()
     Initialization.
-    ObjectModule: <<multiagent.ObjectModule memory_size=0>>
+    ObjectModule: <<multiagent.ObjectModule memory_size=1>>
     Message to '': <<multiagent.Message src= dest= key=vel value=(10, 10)>>
     Message to '': <<multiagent.Message src= dest= key=avel value=1>>
     Message to '': <<multiagent.Message src= dest= key=force value=(1, 1)>>
@@ -99,6 +99,7 @@ def test_objmod_act() :
     '''
     print("Initialization.")
     mod = ObjectModule()
+    mod.mem.reg(key = "name", value = "0")
     print("ObjectModule: %s" % mod.info())
     mod.mem.reg(key = "pos", value = (10, 10))
     mod.mem.reg(key = "angle", value = 1)
@@ -115,4 +116,4 @@ def test_objmod_act() :
 if __name__ == '__main__' :
     result = doctest.testmod()
     print("-" * 50)
-    print("[Request Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))
+    print("[ObjectModule Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))

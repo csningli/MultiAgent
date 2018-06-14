@@ -108,4 +108,4 @@ def test_mod_set() :
 if __name__ == '__main__' :
     result = doctest.testmod()
     print("-" * 50)
-    print("[Request Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))
+    print("[Module Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))
