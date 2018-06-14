@@ -44,7 +44,7 @@ def test_radiomod_sense() :
         print("Message to '0': %s" % msg.info())
     mod.sense(reqt)
     print("Memory after sense.")
-    print("Radio in message in memory: %s" % mod.mem.read(key = "radio_in"))
+    print("Radio in message in memory: %s" % mod.get_radio_in_msgs())
 
 
 def test_radiomod_act() :
@@ -58,7 +58,7 @@ def test_radiomod_act() :
     mod = RadioModule()
     mod.mem.reg(key = "name", value = "0")
     print("RadioModule: %s" % mod.info())
-    mod.mem.reg(key = "radio_out", value = "outgo message.")
+    mod.set_radio_out_msg(msg = "outgo message.")
     resp = Response()
     mod.act(resp)
     for msg in resp.get_msgs(dest = "") :
@@ -68,4 +68,4 @@ def test_radiomod_act() :
 if __name__ == '__main__' :
     result = doctest.testmod()
     print("-" * 50)
-    print("[Request Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))
+    print("[RadioModule Test] attempted/failed tests: %d/%d" % (result.attempted, result.failed))

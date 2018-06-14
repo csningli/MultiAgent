@@ -65,22 +65,22 @@ def test_objmod_sense() :
         print("Message to '0': %s" % msg.info())
     mod.sense(reqt)
     print("Memory after sense.")
-    pos = mod.mem.read(key = "pos")
+    pos = mod.get_pos()
     print("Position in memory: (%.1f, %.1f)" % (pos[0], pos[1]))
     print("Position in buffer: (%.1f, %.1f)" % (mod.buff["pos"][0], mod.buff["pos"][1]))
-    angle = mod.mem.read(key = "angle")
+    angle = mod.get_angle()
     print("Angle in memory: %.1f" % angle)
     print("Angle in buffer: %.1f" % mod.buff["angle"])
-    vel = mod.mem.read(key = "vel")
+    vel = mod.get_vel()
     print("Velocity in memory: (%.1f, %.1f)" % (vel[0], vel[1]))
     print("Velocity in buffer: (%.1f, %.1f)" % (mod.buff["vel"][0], mod.buff["vel"][1]))
-    avel = mod.mem.read(key = "avel")
+    avel = mod.get_avel()
     print("Angular velocity in memory: %.1f" % avel)
     print("Angular velocity in buffer: %.1f" % mod.buff["avel"])
-    force = mod.mem.read(key = "force")
+    force = mod.get_force()
     print("Force in memory: (%.1f, %.1f)" % (force[0], force[1]))
     print("Force in buffer: (%.1f, %.1f)" % (mod.buff["force"][0], mod.buff["force"][1]))
-    color = mod.mem.read(key = "color")
+    color = mod.get_color()
     print("Color in memory: (%d, %d, %d, %d)" % (color[0], color[1], color[2], color[3]))
     print("Color in buffer: (%d, %d, %d, %d)" % (mod.buff["color"][0], mod.buff["color"][1], mod.buff["color"][2], mod.buff["color"][3]))
 
@@ -94,19 +94,15 @@ def test_objmod_act() :
     Message to '': <<multiagent.Message src= dest= key=avel value=1>>
     Message to '': <<multiagent.Message src= dest= key=force value=(1, 1)>>
     Message to '': <<multiagent.Message src= dest= key=color value=(1, 1, 1, 255)>>
-    Message to '': <<multiagent.Message src= dest= key=angle value=1>>
-    Message to '': <<multiagent.Message src= dest= key=pos value=(10, 10)>>
     '''
     print("Initialization.")
     mod = ObjectModule()
     mod.mem.reg(key = "name", value = "0")
     print("ObjectModule: %s" % mod.info())
-    mod.mem.reg(key = "pos", value = (10, 10))
-    mod.mem.reg(key = "angle", value = 1)
-    mod.mem.reg(key = "vel", value = (10, 10))
-    mod.mem.reg(key = "avel", value = 1)
-    mod.mem.reg(key = "force", value = (1, 1))
-    mod.mem.reg(key = "color", value = (1, 1, 1, 255))
+    mod.apply_vel(vel = (10, 10))
+    mod.apply_avel(avel = 1)
+    mod.apply_force(force = (1, 1))
+    mod.apply_color(color = (1, 1, 1, 255))
     resp = Response()
     mod.act(resp)
     for msg in resp.get_msgs(dest = "") :
