@@ -756,6 +756,7 @@ class Module(object) :
     def set_radar_dist(self, dist) :
         self.mem.reg("radar_dist", dist)
 
+
 class ObjectModule(Module) :
     def __init__(self) :
         super(ObjectModule, self).__init__()
@@ -770,16 +771,15 @@ class ObjectModule(Module) :
             for prop in ["pos", "angle", "vel", "avel", "force", "color"] :
                 if msg.key == prop :
                     self.mem.reg(key = prop, value = msg.value)
-                    self.__buff[prop] = msg.value
+                    self.buff[prop] = msg.value
                     break
 
     def act(self, resp) :
         for prop in ["vel", "avel", "force", "color", "angle", "pos"] :
             value = self.mem.read(prop, None)
-            if value is not None and value != self.__buff.get(prop, None) :
+            if value is not None and value != self.buff.get(prop, None) :
                 resp.add_msg(Message(key = prop, value = value))
                 self.mem.reg(key = prop, value = None)
-
 
 
 class RadioModule(Module) :
@@ -795,7 +795,6 @@ class RadioModule(Module) :
         if radio_msg is not None :
             resp.add_msg(Message(key = "radio", value = radio_msg))
             self.mem.reg(key = "radio_out", value = None)
-
 
 
 class RadarModule(Module) :
