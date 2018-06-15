@@ -10,12 +10,13 @@ sys.path.append("../py")
 from multiagent import *
 
 
-def test_agent() :
+def test_agent_basic() :
     '''
-    >>> test_agent()
-    Agent: <<multiagent.Agent name=test_agent mods_num=1>>
+    >>> test_agent_basic()
+    Agent: <<multiagent.Agent name=0 mods_num=1>>
     '''
-    agent = Agent(name = "test_agent")
+    print("Initialization.")
+    agent = Agent(name = "0")
     print("Agent: %s" % agent.info())
 
 if __name__ == '__main__' :

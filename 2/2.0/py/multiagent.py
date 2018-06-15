@@ -821,21 +821,8 @@ class Agent(object) :
         self.__resp = None
         self.__active = True
         self.name = name
-        self.config()
-
-    def config(self, mods = None) :
-        if mods is None :
-            mods = [ObjectModule(),] # by default, only ObjectModule() is added.
-            #mods = [ObjectModule(), RadioModule(), RadarModule()]
-        self.__mods = []
-
-        # configure the modules for the agent
-
-        if check_attrs(mods, {"__iter__" : None, }) :
-            for mod in mods :
-                if check_attrs(mod, {"sense" : None, "process" : None, "act" : None, }) :
-                    self.__mods.append(mod)
-                    mod.mem = self.__mem
+        self.mods = [ObjectModule(),] # by default, only ObjectModule() is added.
+        # self.mods = [ObjectModule(), RadioModule(), RadarModule()]
 
     def info(self) :
         return "<<multiagent.%s name=%s mods_num=%d>>" % (type(self).__name__, self.__name, len(self.__mods))
@@ -852,6 +839,19 @@ class Agent(object) :
     @property
     def mods(self) :
         return self.__mods
+
+    @mods.setter
+    def mods(self, ms) :
+        self.__mods = []
+        if check_attrs(ms, {"__iter__" : None, }) :
+            for mod in ms :
+                if check_attrs(mod, {"sense" : None, "process" : None, "act" : None, }) :
+                    self.__mods.append(mod)
+                    mod.mem = self.__mem
+
+    def add_mod(self, mod) :
+        if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
+            self.__mods.append(mod)
 
     @property
     def active(self) :
@@ -888,12 +888,18 @@ class Agent(object) :
         return self.__mem
 
     @property
-    def mods(self) :
-        return self.__mods
+    def memo(self) : # memo is in key-value dict.
+        m = {
+            "active" : str(self.active),
+            "__mem" : self.__mem.content, # the memo will be show in the focus information if the key is not prefixed with __
+        }
+        return m
 
-    def add_mod(self, mod) :
-        if check_attrs(mod, {"sense" : None, "process" : None, "act" : None}) :
-            self.__mods.append(mod)
+    @memo.setter
+    def memo(self, m) :
+        self.active = bool(m["active"])
+        self.__mem.content = m["__mem"]
+
 
     @property
     def reqt(self) :
@@ -928,19 +934,6 @@ class Agent(object) :
 
     def handle_cmds(self, cmds) :
         self.__mem.reg(key = "cmd", value = cmds)
-
-    @property
-    def memo(self) : # memo is in key-value dict.
-        m = {
-            "active" : str(self.active),
-            "__mem" : self.__mem.content, # the memo will be show in the focus information if the key is not prefixed with __
-        }
-        return m
-
-    @memo.setter
-    def memo(self, m) :
-        self.active = bool(m["active"])
-        self.__mem.content = m["__mem"]
 
 
 
