@@ -44,9 +44,10 @@ def test_agent_memo() :
     Memory Content:
     Key: name - Value: 0
     Change properties by directly apply 'agent.memo = memo', where 'memo' is a map storing the new values.
-    Active: True
+    Active: False
     Memory Content:
     Key: name - Value: 0
+    Key: key - Value: True
     '''
     print("Initialization.")
     agent = Agent(name = "0")
@@ -63,6 +64,7 @@ def test_agent_memo() :
             "key" : True,
         }
     }
+    agent.memo = memo
     print("Active: %r" % agent.active)
     print("Memory Content:")
     for key, value in agent.mem.content.items() :
