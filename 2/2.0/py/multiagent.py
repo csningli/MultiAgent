@@ -929,7 +929,7 @@ class Agent(object) :
         for mod in self.__mods :
             mod.process()
         for mod in self.__mods :
-            resp = mod.act(self.__resp)
+            mod.act(self.__resp)
         return self.__resp
 
     def handle_cmds(self, cmds) :
