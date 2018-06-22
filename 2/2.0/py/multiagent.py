@@ -936,7 +936,6 @@ class Agent(object) :
         self.__mem.reg(key = "cmd", value = cmds)
 
 
-
 class Shot(object) :
     def __init__(self) :
         self.__shot = {
@@ -948,35 +947,35 @@ class Shot(object) :
 
     @property
     def obj_props(self) : # obj_props is in name-dict dict.
-        return copy.copy(self.__shot["obj_props"])
+        return self.__shot["obj_props"]
 
     @obj_props.setter
     def obj_props(self, props) :
-        self.__shot["obj_props"] = copy.copy(props)
+        self.__shot["obj_props"] = props
 
     @property
     def obt_props(self) : # obt_props is in name-dict dict.
-        return copy.copy(self.__shot["obt_props"])
+        return self.__shot["obt_props"]
 
     @obt_props.setter
     def obt_props(self, props) :
-        self.__shot["obt_props"] = copy.copy(props)
+        self.__shot["obt_props"] = props
 
     @property
     def agent_memos(self) : # agent_memos is in name-dict dict.
-        return copy.copy(self.__shot["agent_memos"])
+        return self.__shot["agent_memos"]
 
     @agent_memos.setter
     def agent_memos(self, memos) :
-        self.__shot["agent_memos"] = copy.copy(memos)
+        self.__shot["agent_memos"] = memos
 
     @property
     def context_paras(self) : # context_paras is in name-value dict.
-        return copy.copy(self.__shot["context_paras"])
+        return self.__shot["context_paras"]
 
     @context_paras.setter
     def context_paras(self, paras) :
-        self.__shot["context_paras"] = copy.copy(paras)
+        self.__shot["context_paras"] = paras
 
     #def set_obj_prop(self, name, key, value = None) :
         #if name not in self.__shot["obj_props"].keys() :
