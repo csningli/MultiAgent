@@ -945,6 +945,9 @@ class Shot(object) :
             "agent_memos" : {},
         }
 
+    def info(self) :
+        return "<<multiagent.%s obj_props_len=%d obt_props_len=%d context_paras_len=%d agent_memos_len=%d>>" % (type(self).__name__, len(self.__shot["obj_props"]), len(self.__shot["obt_props"]), len(self.__shot["context_paras"]), len(self.__shot["agent_memos"]))
+
     @property
     def obj_props(self) : # obj_props is in name-dict dict.
         return self.__shot["obj_props"]

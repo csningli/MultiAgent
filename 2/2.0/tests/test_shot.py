@@ -13,21 +13,11 @@ def test_shot_basic() :
     '''
     >>> test_shot_basic()
     Initialization.
+    Shot: <<multiagent.Shot obj_props_len=0 obt_props_len=0 context_paras_len=0 agent_memos_len=0>>
     '''
     print("Initialization.")
     shot = Shot()
     print("Shot: %s" % shot.info())
-
-
-def test_shot_obj_props() :
-    '''
-    >>> test_shot_basic()
-    Initialization.
-    '''
-    print("Initialization.")
-    shot = Shot()
-    print("Shot: %s" % shot.info())
-
 
 if __name__ == '__main__' :
     result = doctest.testmod()
