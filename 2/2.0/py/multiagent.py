@@ -1134,9 +1134,9 @@ class Schedule(object) :
 
     def queue_pop(self) : # the poped item is key-list dict.
         item = self.__queue.get(0, {"obj" : [], "obt" : [], "agent" : [],})
-        for category in {"agent", "obj", "obt"} :
-            for entry in item[category] :
-                self.__queue[-1][category].append(entry)
+        # for category in {"agent", "obj", "obt"} :
+        #     for entry in item[category] :
+        #         self.__queue[-1][category].append(entry)
 
         self.__queue[0] = {
             "obj" : [],
