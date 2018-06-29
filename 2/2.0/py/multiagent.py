@@ -1000,9 +1000,15 @@ class Shot(object) :
 
 
 class Data(object) :
-    def __init__(self) :
+    def __init__(self, filename = None) :
         self.__data = []
-        self.__filename =  "multiagent_%s.data" % datetime.datetime.now().strftime("%Y%m%d%H%M%S_%f")
+        if filename is None :
+            self.filename =  "multiagent_%s.data" % datetime.datetime.now().strftime("%Y%m%d%H%M%S_%f")
+        else :
+            self.filename = filename
+
+    def info(self) :
+        return "<<multiagent.%s size=%d filename=%s>>" % (type(self).__name__, self.size, self.filename)
 
     @property
     def size(self) :
@@ -1070,7 +1076,13 @@ class Data(object) :
 
 class Schedule(object) :
     def __init__(self) :
-        self.__queue = {}
+        self.__queue = {
+            -1 : {
+                "obj" : [],
+                "obt" : [],
+                "agent" : [],
+            },
+        }
         self.__last = -1
 
     def info(self) :
@@ -1113,13 +1125,19 @@ class Schedule(object) :
                 "obt" : [],
                 "agent" : [],
             }
-            if int(delay) > self.__last :
-                self.__last = int(delay)
+
+        if int(delay) > self.__last :
+            self.__last = int(delay)
+
         if category in ["obj", "obt", "agent"] :
             self.__queue[int(delay)][category].append(item)
 
     def queue_pop(self) : # the poped item is key-list dict.
         item = self.__queue.get(0, {"obj" : [], "obt" : [], "agent" : [],})
+        for category in {"agent", "obj", "obt"} :
+            for entry in item[category] :
+                self.__queue[-1][category].append(entry)
+
         self.__queue[0] = {
             "obj" : [],
             "obt" : [],
@@ -1133,7 +1151,11 @@ class Schedule(object) :
                 continue
             else :
                 self.__queue[delay - 1] = self.__queue[delay]
-                self.__queue[delay] = self.__queue.get(delay + 1, {"obj" : [], "obt" : [], "agent" : [],})
+                self.__queue[delay] = {
+                    "obj" : [],
+                    "obt" : [],
+                    "agent" : [],
+                }
 
             if delay == self.__last :
                 self.__last = delay - 1
