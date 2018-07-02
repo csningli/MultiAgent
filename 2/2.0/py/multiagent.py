@@ -1183,191 +1183,236 @@ class Driver(object) :
         self.__reqt = None
         self.__resp = None
 
-    @property
-    def filename(self) :
-        return self.__data.filename
-
-    @filename.setter
-    def filename(self, fn = None) :
-        self.__data.filename = fn
-        if self.__data.size > 0 :
-            self.__steps = self.__data.size - 1
-            self.apply_shot(self.__data.get_shot(self.__steps))
-
+    def info(self) :
+        return "<<multiagent.%s has_context=%d has_schedule=%d>>" % (type(self).__name__, self.context is not None, self.schedule is not None)
 
     @property
-    def agent_memos(self) :
-        memos = {}
-        for name, agent in self.__agents.items() :
-            memos[name] = agent.memo
-        return memos
+    def reqt(self) :
+        return self.__reqt
 
-    @agent_memos.setter
-    def agent_memos(self, memos) :
-        for name, memo in memos.items() :
-            agent = self.__agents.get(name, None)
-            if agent is not None :
-                agent.memo = memo
+    @reqt.setter
+    def reqt(self, r) :
+        if check_attrs(r, {"add_msg" : None, "get_msgs" : None}) :
+            self.__reqt = r
+
+    @property
+    def resp(self) :
+        return self.__resp
+
+    @resp.setter
+    def resp(self, r) :
+        if check_attrs(r, {"add_msg" : None, "get_msgs" : None}) :
+            self.__resp = r
+
+    @property
+    def context(self) :
+        return self.__context
+
+    @property
+    def context_time(self) :
+        return self.context.time
+
+    @property
+    def context_timer_delta(self) :
+        return self.context.timer_delta
+
+    @property
+    def schedule(self) :
+        return self.__schedule
 
     @property
     def steps(self) :
         return self.__steps
 
-    @property
-    def context_time(self) :
-        return self.__context.time
+    @steps.setter
+    def steps(self, value) :
+        self.__steps = value
 
     @property
-    def context_timer_delta(self) :
-        return self.__context.timer_delta
+    def data(self) :
+        return self.__data
 
-    def info(self) :
-        return "<<multiagent.%s has_context=%d has_schedule=%d has_timer=%d agents_num=%d>>" % (
-                type(self).__name__, self.__context is not None,
-                self.__schedule is not None,
-                self.__timer is not None,
-                len(self.__agents))
+    @property
+    def filename(self) :
+        return self.data.filename
+
+    @filename.setter
+    def filename(self, fn = None) :
+        self.data.filename = fn
+        if self.data.size > 0 :
+            self.steps = self.data.size - 1
+            self.apply_shot(self.data.get_shot(self.steps))
+
+
+    @property
+    def agents(self) :
+        return self.__agents
+
+
+    @property
+    def agent_memos(self) :
+        memos = {}
+        for name, agent in self.agents.items() :
+            memos[name] = agent.memo
+        return memos
+
+
+    @agent_memos.setter
+    def agent_memos(self, memos) :
+        for name, memo in memos.items() :
+            agent = self.agents.get(name, None)
+            if agent is not None :
+                agent.memo = memo
+
 
     def draw(self, screen) :
-        self.__context.draw(screen)
+        self.context.draw(screen)
 
     def go(self) :
         result = True
 
-        self.__steps += 1
+        self.steps += 1
 
-        while self.__data.size < self.__steps :
-            self.__data.add_shot(self.take_shot())
+        while self.data.size < self.steps :
+            self.data.add_shot(self.take_shot())
 
-        if self.__steps < self.__data.size :
-            self.apply_shot(self.__data.get_shot(self.__steps))
+        if self.steps < self.data.size :
+            self.apply_shot(self.data.get_shot(self.steps))
         else :
-            item = self.__schedule.queue_pop()
+            item = self.schedule.queue_pop()
             for obt in item["obt"] :
-                self.__context.add_obt(obt)
+                self.context.add_obt(obt)
             for obj in item["obj"] :
-                self.__context.add_obj(obj)
+                self.context.add_obj(obj)
             for agent in item["agent"] :
                 if check_attrs(agent, {"name" : None, "handle_reqt" : None, "handle_cmds" : None}) and agent.name not in self.__agents.keys() :
-                    self.__agents[agent.name] = agent
+                    self.agents[agent.name] = agent
 
             # get request from agents' handling results
 
-            self.__reqt = Response()
+            self.reqt = Response()
 
             reqts = {}
-            for name, agent in self.__agents.items() :
+            for name, agent in self.agents.items() :
                 reqt = Request()
-                if self.__resp is not None :
-                    msgs = self.__resp.get_msgs(name)
+                if self.resp is not None :
+                    msgs = self.resp.get_msgs(name)
                     for msg in msgs :
                         msg.src = ""
                         reqt.add_msg(msg)
                 reqts[name] = reqt
 
             for name, reqt in reqts.items() :
-                resp = self.__agents[name].handle_reqt(reqt)
+                resp = self.agents[name].handle_reqt(reqt)
                 msgs = resp.get_msgs("")
                 for msg in msgs :
                     msg.src = name
-                    self.__reqt.add_msg(msg)
+                    self.reqt.add_msg(msg)
 
             # get response from context's handling result
 
-            self.__resp = self.__context.handle_reqt(self.__reqt)
-            self.__data.add_shot(self.take_shot())
+            self.resp = self.context.handle_reqt(self.reqt)
+            self.data.add_shot(self.take_shot())
 
         return result
+
 
     def back(self) :
         result = True
-        if self.__steps > 0 :
-            self.__steps -= 1
-            self.apply_shot(self.__data.get_shot(self.__steps))
+        if self.steps > 0 :
+            self.steps -= 1
+            self.apply_shot(self.data.get_shot(self.steps))
         return result
 
+
     def clear(self, dist) :
-        agents_to_die = self.__context.clear(dist)
+        agents_to_die = self.context.clear(dist)
         for name in agents_to_die :
-            if name in self.__agents.keys() :
-                self.__agents[name].active = False
-                del(self.__agents[name])
+            if name in self.agents.keys() :
+                self.agents[name].active = False
+                del(self.agents[name])
+
 
     def handle_cmds(self, cmd_msgs) :
-        for agent in self.__agents.values() :
+        for agent in self.agents.values() :
             agent.handle_cmds(cmd_msgs)
-        self.__context.handle_cmds(cmd_msgs)
+        self.context.handle_cmds(cmd_msgs)
+
 
     def take_shot(self) :
-        shot = self.__data.get_shot(self.__steps)
+        shot = self.data.get_shot(self.steps)
         if shot is None :
             shot = Shot()
             shot.agent_memos = self.agent_memos
-            shot.context_paras = self.__context.paras
-            shot.obj_props = self.__context.obj_props
-            shot.obt_props = self.__context.obt_props
+            shot.context_paras = self.context.paras
+            shot.obj_props = self.context.obj_props
+            shot.obt_props = self.context.obt_props
         return shot
+
 
     def apply_shot(self, shot) :
         result = False
         if check_attrs(shot, {"agent_memos" : None, "context_paras" : None, "obj_props" : None, "obt_props" : None}) :
-            for agent in self.__agents.values() :
+            for agent in self.agents.values() :
                 agent.active = False
             for name, memo in shot.agent_memos.items() :
-                if name not in self.__agents.keys() :
-                    agent_gen = self.__schedule.get_agent_gen(name)
+                if name not in self.agents.keys() :
+                    agent_gen = self.schedule.get_agent_gen(name)
                     if agent_gen is None :
                         agent_gen = Agent
                     agent = agent_gen(name = name)
                     agent.memo = memo
-                    self.__agents[name] = agent
-                self.__agents[name].active = True
+                    self.agents[name] = agent
+                self.agents[name].active = True
 
-            for obj in self.__context.oracle.objs.values() :
+            for obj in self.context.oracle.objs.values() :
                 obj.visible = False
             for name, prop in shot.obj_props.items() :
-                if name not in self.__context.oracle.objs.keys() :
-                    obj_gen = self.__schedule.get_obj_gen(name)
+                if name not in self.context.oracle.objs.keys() :
+                    obj_gen = self.schedule.get_obj_gen(name)
                     if obj_gen is None :
                         obj_gen = Object
                     obj = obj_gen(name = name, mass = float(prop["mass"]), radius = float(prop["radius"]))
-                    self.__context.oracle.add_obj(obj)
+                    self.context.oracle.add_obj(obj)
 
-                self.__context.oracle.objs[name].visible = True
+                self.context.oracle.objs[name].visible = True
 
-            for obt in self.__context.oracle.obts.values() :
+            for obt in self.context.oracle.obts.values() :
                 obt.visible = False
             for name, prop in shot.obt_props.items() :
-                if name not in self.__context.oracle.obts.keys() :
-                    obt_gen = self.__schedule.get_obt_gen(name)
+                if name not in self.context.oracle.obts.keys() :
+                    obt_gen = self.schedule.get_obt_gen(name)
                     if obt_gen is None :
                         obt_gen = Obstacle
                     obt = obt_gen(name = name,
                         a = tuple([int(i) for i in prop["start"].strip("(").strip(")").split(",")]),
                         b = tuple([int(i) for i in prop["end"].strip("(").strip(")").split(",")]),
                         radius = float(prop["radius"]))
-                    self.__context.oracle.add_obt(obt)
-                self.__context.oracle.obts[name].visible = True
+                    self.context.oracle.add_obt(obt)
+                self.context.oracle.obts[name].visible = True
 
             self.agent_memos = shot.agent_memos
-            self.__context.paras = shot.context_paras
-            self.__context.obj_props = shot.obj_props
-            self.__context.obt_props = shot.obt_props
+            self.context.paras = shot.context_paras
+            self.context.obj_props = shot.obj_props
+            self.context.obt_props = shot.obt_props
             result = True
         return result
 
+
     def export(self) :
-        self.__data.to_file()
+        self.data.to_file()
+
 
     def get_focus_objs(self, pos) :
-        return self.__context.get_objs_at(pos)
+        return self.context.get_objs_at(pos)
+
 
     def get_focus_agents(self, pos) :
         agents = []
-        objs = self.__context.get_objs_at(pos)
+        objs = self.context.get_objs_at(pos)
         for obj in objs :
-            if obj is not None and obj.name in self.__agents.keys() :
-                agents.append(self.__agents[obj.name])
+            if obj is not None and obj.name in self.agents.keys() :
+                agents.append(self.agents[obj.name])
         return agents
 
 
