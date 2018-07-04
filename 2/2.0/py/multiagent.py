@@ -1243,11 +1243,9 @@ class Driver(object) :
             self.steps = self.data.size - 1
             self.apply_shot(self.data.get_shot(self.steps))
 
-
     @property
     def agents(self) :
         return self.__agents
-
 
     @property
     def agent_memos(self) :
@@ -1255,7 +1253,6 @@ class Driver(object) :
         for name, agent in self.agents.items() :
             memos[name] = agent.memo
         return memos
-
 
     @agent_memos.setter
     def agent_memos(self, memos) :
@@ -1267,6 +1264,7 @@ class Driver(object) :
 
     def draw(self, screen) :
         self.context.draw(screen)
+
 
     def go(self) :
         result = True
@@ -1393,6 +1391,7 @@ class Driver(object) :
 
             self.agent_memos = shot.agent_memos
             self.context.paras = shot.context_paras
+            print("context_paras: %s" % self.context.paras)
             self.context.obj_props = shot.obj_props
             self.context.obt_props = shot.obt_props
             result = True
