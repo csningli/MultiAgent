@@ -4,9 +4,13 @@
 
 import sys, os, time, subprocess
 
-tests = ["test_lookmixin.py", "test_object.py", "test_obstacle.py", "test_agent.py", "test_message.py", "test_request.py",
-        "test_oracle.py", "test_timer.py", "test_context.py",  "test_schedule.py",
-        "test_driver.py", "test_simulator.py"]
+tests = [ "test_agent.py", "test_commander.py", "test_cmdline.py", "test_context.py",
+        "test_data.py", "test_driver.py", "test_inspector.py", "test_lookmixin.py",
+        "test_memory.py", "test_message.py", "test_module.py",
+        "test_object.py", "test_objmod.py", "test_obstacle.py", "test_oracle.py",
+        "test_radarmod.py", "test_radiomod.py", "test_request.py",
+        "test_schedule.py", "test_shot.py", "test_simulator.py",
+        "test_timer.py", ]
 
 if __name__ == '__main__' :
     for test in tests :

@@ -2,8 +2,8 @@
 # MultiAgent 2.0
 # (c) 2017-2018, NiL, csningli@gmail.com
 
-# import sys modules
-import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3
+import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3, readline
+
 from numpy import array, dot
 from numpy.linalg import norm
 
@@ -1453,9 +1453,8 @@ class Inspector(object) :
 
 
 class Commander(object) :
-
-    def __init__(self) :
-        self.__database = "./multiagent_commands.db"
+    def __init__(self, database = "./multiagent_commands.db") :
+        self.__database = database
         self.__con = None
         self.__timelabel = timelabel()
 
@@ -1463,7 +1462,80 @@ class Commander(object) :
             self.__con = sqlite3.connect(self.__database)
 
     def info(self) :
-        return "<<multiagent.%s database=%s has_connect=%r>>" % (type(self).__name__, self.database, self.con is not None)
+        return "<<multiagent.%s database=%s has_connect=%d>>" % (type(self).__name__, self.database, self.con is not None)
+
+    @property
+    def database(self) :
+        return self.__database
+
+    @database.setter
+    def database(self, db) :
+        self.__database = db
+
+    @property
+    def timelabel(self) :
+        return self.__timelabel
+
+    @timelabel.setter
+    def timelabel(self, label) :
+        self.__timelabel = label
+
+    @property
+    def con(self) :
+        return self.__con
+
+    @con.setter
+    def con(self, c) :
+        self.__con = c
+
+    def connect(self) :
+        if os.path.exists(self.database) :
+            self.con = sqlite3.connect(self.database)
+
+    def check(self):
+        msgs = []
+        if self.con is None and os.path.exists(self.database) :
+            self.con = sqlite3.connect(self.database)
+
+        if self.con is not None :
+            cur = self.con.cursor()
+            cur.execute("SELECT * from Commands WHERE timelabel > \"%s\" ORDER BY timelabel DESC" % self.__timelabel)
+            for record in cur.fetchall() :
+                msgs.append(record[1])
+                if record[0] > self.timelabel :
+                    self.timelabel = record[0]
+        return msgs
+
+
+class CommandLine :
+    __promote = "CMA"
+    __title = "Command Line for MultiAgent"
+    __copyright = "(c) copyright 2018, NiL, csningli@gmail.com"
+
+    def __init__(self, database = "./multiagent_commands.db") :
+        self.__database = database
+        self.__con = None
+
+        if os.path.exists(self.database) :
+            self.con = sqlite3.connect(self.database)
+        elif self.database != "" :
+            self.con = sqlite3.connect(self.database)
+            if self.con is not None :
+                try :
+                    cur = self.con.cursor()
+                    cur.execute("CREATE TABLE Commands(timelabel CHAR(20), content TEXT)")
+                    self.con.commit()
+                except sqlite3.Error, e:
+                    self.con.rollback()
+
+        if self.con is not None :
+            cur = self.con.cursor()
+            cur.execute("SELECT * from Commands ORDER BY timelabel LIMIT 10")
+            for record in cur.fetchall() :
+                readline.add_history("req " + record[1].replace(';', ' '))
+
+    def info(self) :
+        return "<<multiagent.%s database=%s has_connect=%d>>" % (type(self).__name__, self.database, self.con is not None)
 
     @property
     def database(self) :
@@ -1481,23 +1553,38 @@ class Commander(object) :
     def con(self, c) :
         self.__con = c
 
-    def connect(self) :
-        if os.path.exists(self.database) :
-            self.con = sqlite3.connect(self.database)
+    def run(self) :
+        print("%s | %s" % (self.__title, self.__copyright))
+        print("=" * 50)
+        while True :
+            if sys.version_info[0] == 2 :
+                line = raw_input("[\033[1m%s\033[0m] " % self.__promote).strip()
+            elif sys.version_info[0] == 3 :
+                line = input("[" + self.__promote + "] ").strip()
+            else :
+                break
+            if len(line.strip()) > 0 and line.split(' ') > 1 :
+                op = line.strip().split(' ')[0]
+                msg = ' '.join(line.strip().split(' ')[1:])
+                if op in ["q", "quit"] : # >> quit or >> q
+                    break
+                elif op == "req" :      # >> req msg_key msg_value msg_more ...
+                    self.request(msg)
 
-    def check(self):
-        msgs = []
-        if self.__con is None and os.path.exists(self.__database) :
-            self.__con = sqlite3.connect(self.__database)
-
-        if self.__con is not None :
-            cur = self.__con.cursor()
-            cur.execute("SELECT * from Commands WHERE timelabel > \"%s\" ORDER BY timelabel DESC" % self.__timelabel)
-            for record in cur.fetchall() :
-                msgs.append(record[1])
-                if record[0] > self.__timelabel :
-                    self.__timelabel = record[0]
-        return msgs
+    def request(self, msg) :
+        """
+        None -> None
+        Check Angine status.
+        """
+        if self.con is not None :
+            try :
+                cur = self.con.cursor()
+                cur.execute("INSERT INTO Commands VALUES (\"%s\", \"%s\")" % (timelabel(), msg))
+                self.con.commit()
+                print("Added successfully.")
+            except sqlite3.Error, e:
+                self.con.rollback()
+                print("Error in adding the msg.")
 
 
 class Simulator(object) :

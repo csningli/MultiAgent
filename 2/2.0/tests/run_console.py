@@ -6,10 +6,7 @@ import sys
 
 sys.path.append("../py")
 
-from console import *
-
-class CommandLine(MultiAgentCommandLine) :
-    pass
+from multiagent import *
 
 if __name__ == '__main__' :
     c = CommandLine()
