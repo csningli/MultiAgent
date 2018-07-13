@@ -9,11 +9,13 @@ sys.path.append("../py")
 
 from multiagent import *
 
-def test_sim_init() :
+def test_sim_basic() :
     '''
-    >>> test_sim_init()
+    >>> test_sim_basic()
+    Initialization.
     Simulator: <<multiagent.Simulator has_driver=1>>
     '''
+    print("Initialization.")
     driver = Driver(context = Context(), schedule = Schedule())
     sim = Simulator(driver = driver)
     print("Simulator: %s" % sim.info())
@@ -21,11 +23,15 @@ def test_sim_init() :
 def test_sim_sim() :
     '''
     >>> test_sim_sim()
-    Simulate
+    Initialization.
+    Simulator: <<multiagent.Simulator has_driver=1>>
+    Simulate.
     '''
+    print("Initialization.")
     driver = Driver(context = Context(), schedule = Schedule())
     sim = Simulator(driver = driver)
-    print("Simulate")
+    print("Simulator: %s" % sim.info())
+    print("Simulate.")
     sim.simulate(limit = 1)
 
 
