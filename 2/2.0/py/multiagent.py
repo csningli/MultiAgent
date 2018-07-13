@@ -1423,6 +1423,9 @@ class Inspector(object) :
         self.delay = delay
         self.reset()
 
+    def info(self) :
+        return "<<multiagent.%s delay=%d count=%d>>" % (type(self).__name__, self.delay, self.count)
+
     @property
     def delay(self) :
         return self.__delay
@@ -1430,6 +1433,10 @@ class Inspector(object) :
     @delay.setter
     def delay(self, value) :
         self.__delay = value
+
+    @property
+    def count(self) :
+        return self.__count
 
     def reset(self) :
         self.__count = self.__delay
