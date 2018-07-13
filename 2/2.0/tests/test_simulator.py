@@ -32,7 +32,7 @@ def test_sim_sim() :
     sim = Simulator(driver = driver)
     print("Simulator: %s" % sim.info())
     print("Simulate.")
-    sim.simulate(limit = 1)
+    sim.simulate(limit = 1, filename = "")
 
 
 
