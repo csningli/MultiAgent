@@ -1446,14 +1446,37 @@ class Inspector(object) :
 
 
 class Commander(object) :
-    __database = "./multiagent_commands.db"
 
     def __init__(self) :
+        self.__database = "./multiagent_commands.db"
         self.__con = None
         self.__timelabel = timelabel()
 
         if os.path.exists(self.__database) :
             self.__con = sqlite3.connect(self.__database)
+
+    def info(self) :
+        return "<<multiagent.%s database=%s has_connect=%r>>" % (type(self).__name__, self.database, self.con is not None)
+
+    @property
+    def database(self) :
+        return self.__database
+
+    @database.setter
+    def database(self, db) :
+        self.__database = db
+
+    @property
+    def con(self) :
+        return self.__con
+
+    @con.setter
+    def con(self, c) :
+        self.__con = c
+
+    def connect(self) :
+        if os.path.exists(self.database) :
+            self.con = sqlite3.connect(self.database)
 
     def check(self):
         msgs = []
