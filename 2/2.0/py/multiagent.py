@@ -4,16 +4,13 @@
 
 import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3, readline
 
-from numpy import array, dot
-from numpy.linalg import norm
-
 import pygame
 from pygame.locals import *
 from pygame.color import *
 
 import pymunkoptions
 pymunkoptions.options["debug"] = False
-from pymunk import Circle, Segment, Body, Space, Vec2d, moment_for_circle
+import pymunk
 
 from utils import *
 from geometry import *
@@ -61,9 +58,9 @@ class LookMixin(object) :
         self.__visible = value
 
 
-class Object(Circle, LookMixin) :
+class Object(pymunk.Circle, LookMixin) :
     def __init__(self, name, mass = 1.0, radius = 10.0) :
-        body = Body(mass = mass, moment = moment_for_circle(mass, 0, radius, (0,0)))
+        body = pymunk.Body(mass = mass, moment = pymunk.moment_for_circle(mass, 0, radius, (0,0)))
         super(Object, self).__init__(body, radius, (0, 0))
         self.__name = name
         self.mass = mass
@@ -183,8 +180,8 @@ class Object(Circle, LookMixin) :
 
     def draw(self, screen) :
         if self.visible == True :
-            p = Vec2d(self.pos)
-            rot = Vec2d(self.rot)
+            p = pymunk.Vec2d(self.pos)
+            rot = pymunk.Vec2d(self.rot)
             r = self.radius
             (width, height) = screen.get_size()
 
@@ -193,15 +190,15 @@ class Object(Circle, LookMixin) :
             p.x = int(width / 2.0 + p.x)
             p.y = int(height / 2.0 - p.y)
 
-            head = Vec2d(rot.x, -rot.y) * self.radius * 0.9
+            head = pymunk.Vec2d(rot.x, -rot.y) * self.radius * 0.9
             pygame.draw.circle(screen, self.stroke_color, p, int(r), 2)
             pygame.draw.circle(screen, self.fill_color, p, int(r/2.0), 4)
             pygame.draw.line(screen, self.pointer_color, p, p + head)
 
 
-class Obstacle(Segment, LookMixin) :
+class Obstacle(pymunk.Segment, LookMixin) :
     def __init__(self, name, a = (0.0, 0.0), b = (0.0, 0.0), radius = 1.0) :
-        super(Obstacle, self).__init__(Body(body_type = Body.STATIC), a, b, radius)
+        super(Obstacle, self).__init__(pymunk.Body(body_type = pymunk.Body.STATIC), a, b, radius)
         self.__name = name
 
     def info(self) :
@@ -255,7 +252,7 @@ class Obstacle(Segment, LookMixin) :
             pygame.draw.line(screen, self.stroke_color, start, end, int(self.radius))
 
 
-class OracleSpace(Space) :
+class OracleSpace(pymunk.Space) :
 
     def __init__(self, objs = [], obts = []) :
         super(OracleSpace, self).__init__()
