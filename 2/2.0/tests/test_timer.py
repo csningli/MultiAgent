@@ -5,9 +5,8 @@
 import sys, os, time
 import doctest
 
-sys.path.append("../py")
-
-from multiagent import *
+sys.path.append("..")
+from mas.multiagent import *
 
 def test_timer_basic() :
     '''
@@ -27,7 +26,7 @@ def test_timer_basic() :
     timer.read = 0.04
     print("Read: %.4f" % timer.read)
 
-    
+
 def test_timer_tick() :
     '''
     >>> test_timer_tick()

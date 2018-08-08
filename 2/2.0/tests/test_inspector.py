@@ -5,9 +5,8 @@
 import sys, os, time
 import doctest
 
-sys.path.append("../py")
-
-from multiagent import *
+sys.path.append("..")
+from mas.multiagent import *
 
 def test_insp_basic() :
     '''

@@ -12,8 +12,8 @@ import pymunkoptions
 pymunkoptions.options["debug"] = False
 import pymunk
 
-from utils import *
-from geometry import *
+from mas.utils import *
+from mas.geometry import *
 
 class LookMixin(object) :
     '''

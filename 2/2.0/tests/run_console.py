@@ -4,9 +4,9 @@
 
 import sys
 
-sys.path.append("../py")
+sys.path.append("..")
 
-from multiagent import *
+from mas.multiagent import *
 
 if __name__ == '__main__' :
     c = CommandLine()
