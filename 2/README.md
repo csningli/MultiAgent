@@ -9,7 +9,7 @@ Download MultiAgent and step inside the folder.
 	[user @ ~] cd MultiAgent/2/
 
 ## Python Environment
-MultiAgent 2 works with Python 3.6. You also need Pygame 1.9.3, Pymunk 5.3.2 and Numpy.  
+MultiAgent 2 works with Python 3.6. You also need Pygame 1.9.3, Pymunk 5.3.2 and Numpy.
 
 ## User Anaconda Environment
 If you want to use virtual environment, like Anaconda. It is recommended to create the environment with Python 2.7,
@@ -18,3 +18,6 @@ with the necessary packages installed.
 
 	[user @ MultiAgent/2/] conda env create -f environment.yml
 	[user @ MultiAgent/2/] source activate multiagent2
+
+## Version 2.0
+The current subversion of MultiAgent 2 is 2.0, please refer to "2/2.0/README.md" for the introduction and class references.
