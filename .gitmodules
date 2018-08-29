@@ -1,0 +1,3 @@
+[submodule "2/2.0/mas/third/pyorca"]
+	path = 2/2.0/mas/third/pyorca
+	url = https://github.com/Muon/pyorca/
