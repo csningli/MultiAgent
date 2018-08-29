@@ -134,13 +134,17 @@ you can change them through the corresponding interfaces.
 ### Properties
 - <b>name</b> : A <b>non-empty</b> string to identify the Object instance.
 Objects' names will be the only identification while binding to the corresponding agents,
-and hence you should be cautious.  
+and hence you should be cautious.
 
 		obj.name = "0"
 
 - <b>mass</b> : A single float number to indicate the mass.
 
 		obj.mass = 5.0
+
+- <b>radius</b> [read only]: A single float number to indicate the radius of the circle shape.
+
+		print(obj.radius) # 10.0
 
 - <b>pos</b> : A pair of float numbers to indicate the current position.
 
@@ -160,7 +164,9 @@ and hence you should be cautious.
 
 - <b>avel</b> : A single float number to indicate the angular velocity (counter-clockwise).
 
-		obj.avel = 0.1  
+		obj.avel = 0.1
+
+- Object inherits LookMixin, and hence the object instance has all LookMixin properties.
 
 ### Methods
 
@@ -174,6 +180,52 @@ and hence you should be cautious.
 		obj.draw(screen = screen)
 
 ## (class) Obstacle
+All <b>Obstacle</b>s in MultiAgent 2.0 are represendted by the segments with configurable thickness.
+
+You can define an obstacle by specifying the starting point and the
+finishing point. If you want the segment thicker, you can explicitly indicate the 'radius' parameter in the initialization.
+
+In MultiAgent 2.0, all obstacles are static, which means they can not be moved (and resized) once they are created.
+
+### Initialization
+
+	obt = Obstacle(name = "0", a = (0.0, 0.0), b = (0.0, 0.0), radius = 1.0)
+	# 'name' is mandatory.
+	# 'a' is (0.0, 0.0) by default.
+	# 'b' is (0.0, 0.0) by default.
+	# 'radius' is 1.0 by default.
+
+### Properties
+- <b>name</b> : A <b>non-empty</b> string to identify the Obstacle instance.
+The namespace of obstacles is different from the one used by the objects. Hence, you can use the same name for an obstacle and an object, and cause no conflicts.
+
+		obt.name = "0"
+
+- <b>a</b> [read only]: A pair of float numbers to indicate the starting point of the segment.
+
+		print(obt.a) # (0.0, 0.0)
+
+- <b>b</b> [read only]: A pair of float numbers to indicate the finishing point of the segment.
+
+		print(obt.b) # (0.0, 0.0)
+
+- <b>radius</b> [read only]: A single float number to indicate the thickness of the segment.
+
+		print(obt.radius) # 1.0
+
+- Obstacle inherits LookMixin, and hence the obstacle instance has all LookMixin properties.
+
+### Methods
+
+- <b>info(<i>self</i>)</b> : return a string that encapsulates the instance information (class name and instance name).
+
+		info = obt.info # 'info' is "<<multiagent.Obstacle name=0>>"
+
+- <b>draw(<i>self</i>, screen)</b> : draw the Obstacle instance on the given screen.
+
+		screen = pygame.display.set_mode((800, 600))
+		obt.draw(screen = screen)
+
 ## (class) Context
 ## (class) Agent
 ## (class) Schedule
