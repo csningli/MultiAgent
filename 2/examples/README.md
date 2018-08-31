@@ -34,6 +34,8 @@ continue the simulation. For example, the following command
 will restore the simulation saved in "multiagent_20180406093531_320529.data".
 To remove the ".data" files, you can call the "clear.sh" script in the example's directory.
 
+## "NO DATA" Option 
+
 There is a special case when you provide the argument with the empty string, i.e. "".
 In such case, a new simulation will be started just like the cases without any arguments. However,
 when the simulation is closed, the saving process is ignored, and hence there is no ".data" file generated.
