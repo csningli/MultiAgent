@@ -6,7 +6,7 @@ and hence compatible with all the subvisions in serise 2.
 ## Run An Example
 To run an example, say "amoebot", you need to at first change directory into "examples/amoebot".
 There is a README file for each of the examples. With it, you can find more information about
-the example. To run the example, you can simply "python" with the "\_sim.py" script.  
+the example. To run the example, you can simply "python" with the "\_sim.py" script.
 
 	[user @ ~] python amoebot_sim.py
 
@@ -20,7 +20,7 @@ without any argument, and closed it with "ESC" key, a new file of extension ".da
 current directory, like "multiagent_20180406093531_320529.data".
 
 Since the data are saved into the file at the end of the simulation, you may need to wait for a while
-if you have run a complex simulation for a long period of time.  
+if you have run a complex simulation for a long period of time.
 
 ## Run with An Argument
 
@@ -37,4 +37,10 @@ To remove the ".data" files, you can call the "clear.sh" script in the example's
 There is a special case when you provide the argument with the empty string, i.e. "".
 In such case, a new simulation will be started just like the cases without any arguments. However,
 when the simulation is closed, the saving process is ignored, and hence there is no ".data" file generated.
-This design will make things easier during the development of a new simulation.  
+This design will make things easier during the development of a new simulation.
+
+
+## The List of Examples
+
+- steering_move
+- range_detect

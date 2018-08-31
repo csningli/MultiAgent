@@ -5,33 +5,10 @@
 import sys, random, datetime, math
 random.seed(datetime.datetime.now())
 
-sys.path.append("../../2.0/py")
+sys.path.append("../../2.0")
 
-from numpy import array
-
-from multiagent import *
-from utils import *
-
-class SteeringObject(Object) :
-    def __init__(self, name, mass = 1.0, radius = 10.0) :
-        super(SteeringObject, self).__init__(name, mass, radius)
-        self.__label = self.name
-
-    @property
-    def label(self) :
-        return self.__label
-
-    @label.setter
-    def label(self, value) :
-        self.__label = value
-
-    def draw(self, screen) :
-        super(SteeringObject, self).draw(screen)
-        if self.visible == True :
-            font = pygame.font.Font(None, 16)
-            (width, height) = screen.get_size()
-            pos_draw = (int(width / 2.0 + self.pos[0] - 5.0), int(height / 2.0 - self.pos[1] - self.radius - 10.0))
-            screen.blit(font.render(self.label, 1, THECOLORS["black"]), pos_draw)
+from mas.multiagent import *
+from mas.extension import ShowLabelObject
 
 class SteeringProcessModule(Module) :
     def process(self) :
@@ -77,7 +54,7 @@ class SteeringMoveModule(ObjectModule) :
 class SteeringAgent(Agent) :
     def __init__(self, name) :
         super(SteeringAgent, self).__init__(name)
-        self.config(mods = [SteeringMoveModule(), SteeringProcessModule()])
+        self.mods = [SteeringMoveModule(), SteeringProcessModule()]
 
     @property
     def focus(self) :
@@ -114,7 +91,7 @@ def run_sim(filename = None) :
 
     # add objects and agents to the context
 
-    obj = SteeringObject(name = "0")
+    obj = ShowLabelObject(name = "0")
     obj.pos = (0, 0)
     context.add_obj(obj)
     schedule.add_agent(SteeringAgent(name = "0"))
@@ -139,4 +116,4 @@ if __name__ == '__main__' :
     filename = None
     if (len(sys.argv) > 1) :
         filename = sys.argv[1]
-    run_sim(filename)
+    run_sim(filename = filename)

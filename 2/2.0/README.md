@@ -1,6 +1,9 @@
 # MultiAgent 2.0
 In a typical instance of the simulation using MultiAgent 2.0,
-one need to instantiate the <b>Simulator</b> and call its <b>simulate</b> method.
+you need to import classses from the mas.multiagent module and instantiate the <b>Simulator</b>
+and call its <b>simulate</b> method.
+
+	import mas.multiagent
 
 	sim = Simulator(...)
 	sim.simulate(...)
