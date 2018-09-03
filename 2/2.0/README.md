@@ -229,6 +229,101 @@ The namespace of obstacles is different from the one used by the objects. Hence,
 		screen = pygame.display.set_mode((800, 600))
 		obt.draw(screen = screen)
 
+## (class) OracleSpace
+
+<b>OracleSpace</b> is where the objects and the obstacles stored. You can specify the objects and the obstacles in separate lists while initializing. You can also add or clear the objects or obstacles after the initialization.
+
+### Initialization
+
+	oracle = OracleSpace(objs = [obj0, obj1], obts = [obt0, obt1, obt2])
+	# 'objs' is [] by default.
+	# 'obts' is [] by default.
+
+### Properties
+- <b>objs</b> [read only]: A list of object instances.
+
+		for obj in oracle.objs :
+			print(obj.info())
+
+		# <<multiagent.Object name=0>>
+		# <<multiagent.Object name=1>>
+
+- <b>obts</b> [read only]: A list of obstacle instances.
+
+		for obt in oracle.obts :
+			print(obt.info())
+
+		# <<multiagent.Obstacle name=0>>
+		# <<multiagent.Obstacle name=1>>
+		# <<multiagent.Obstacle name=2>>
+
+### Methods
+
+- <b>info(<i>self</i>)</b> : return a string that encapsulates the instance information (class name and instance name).
+
+		info = oracle.info # 'info' is "<<multiagent.OracleSpace objs_num=2 obts_num=3>>"
+
+- <b>add_obj(<i>self</i>, obj)</b> : add an object.
+
+		obj = Object(name = "2")
+		oracle.add_obj(obj = obj)
+
+- <b>add_obt(<i>self</i>, obt)</b> : add an obstacle.
+
+		obt = Obstacle(name = "3", a = (0, 0), b = (1.0, 1.0))
+		oracle.add_obt(obt = obt)
+
+- <b>clear(<i>self</i>)</b> : clear all the <b>objects</b>.
+
+		oracle.clear() # obj0 and obj1 are removed.
+
+- <b>get_obj_with(<i>self</i>, name)</b> : get the object with the given name.
+
+		obj = oracle.get_obj_with(name = "0")  # obj is <<multiagent.Object name=0>>
+
+- <b>get_obt_with(<i>self</i>, name)</b> : get the obstacle with the given name.
+
+		obt = oracle.get_obt_with(name = "0")  # obt is <<multiagent.Obstacle name=0>>
+
+- <b>get_objs_at(<i>self</i>, c, d = 0, dist = ppdist_l2)</b> : get the object within a distance d (inclusively) from the given center point.
+
+		# c : the center point, e.g. (0, 0)
+		# d : the distance limit, with default value 0.
+		# dist : the distance function, with default value ppdist_l2 (point-to-point distance in l2 norm.)
+
+		# assume obj0 at (0, 0); obj1 at (10, 10)
+		objs = oracle.get_objs_at(c = (0, 0), d = 5, dist = ppdist_l2)  # objs contains only obj0.
+
+- <b>get_obts_at(<i>self</i>, c, d = 0, dist = pldist_l2)</b> : get the obstacle within a distance d (inclusively) from the given center point.
+
+		# c : the center point, e.g. (0, 0)
+		# d : the distance limit, with default value 0.
+		# dist : the distance function, with default value pldist_l2 (point-to-line distance in l2 norm.)
+
+		# assume obt0 from (-1, 1) to (1, 1); obt1 from (-1, 5) to (1, 5); obt2 from (-1, 10) to (1, 10)
+		obts = oracle.get_obts_at(c = (0, 0), d = 5, dist = pldist_l2)  # obts contains only obt0 and obt1.
+
+- <b>touch(<i>self</i>, c, d = 0)</b> : return the objects and the obstacle within a distance d (inclusively) from the given center point, in a list of blocks.
+
+		# ppdist_l2 is used when check the distance between an object and the center.
+		# pldist_l2 is used when check the distance between an obstacle and the center.
+		# the block for the object has form: ("Object", obj.name, obj.pos[0], obj.pos[1], obj.radius)
+        # the block for the obstacle has form ("Obstacle", obt.name, obt.start[0], obt.start[1], obt.end[0], obt.end[1], obt.radius)
+
+
+		blocks = oracle.touch(c = (0, 0), d = 5)
+		# [
+		#	("Object", "0", 0.0, 0.0, 10),
+		# 	("Obstacle", "0", -1, 1, 1, 1, 1),
+		#	("Obstacle", "1", -1, 5, 1, 5, 1),
+		# ]
+
+- <b>draw(<i>self</i>, screen)</b> : draw the oracle (objects and obstacles) instance on the given screen.
+
+		screen = pygame.display.set_mode((800, 600))
+		oracle.draw(screen = screen)
+
+
 ## (class) Context
 ## (class) Agent
 ## (class) Schedule
