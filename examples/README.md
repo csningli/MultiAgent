@@ -1,8 +1,5 @@
 # MultiAgent Examples
 
-All examples inside "MultiAgent/2/examples" are designed with MultiAgent 2,
-and hence compatible with all the subvisions in serise 2.
-
 ## Run An Example
 To run an example, say "amoebot", you need to at first change directory into "examples/amoebot".
 There is a README file for each of the examples. With it, you can find more information about
@@ -34,7 +31,7 @@ continue the simulation. For example, the following command
 will restore the simulation saved in "multiagent_20180406093531_320529.data".
 To remove the ".data" files, you can call the "clear.sh" script in the example's directory.
 
-## "NO DATA" Option 
+## "NO DATA" Option
 
 There is a special case when you provide the argument with the empty string, i.e. "".
 In such case, a new simulation will be started just like the cases without any arguments. However,

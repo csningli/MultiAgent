@@ -15,6 +15,7 @@ and the corresponding introduction or tutorial in the independent folder of each
 # Get Started
 To work with MultiAgent, at first you need to prepare the developing environment according to the following instructions.
 
+
 ## Download MultiAgent
 Download MultiAgent and step inside the folder.
 
@@ -130,4 +131,4 @@ the proper modules. More details can be found in the reference of <b>Agent</b> a
 
 
 ## Follow The Examples
-You can explore more details of the usage by following the examples (i.e. in "examples/").
+You can explore more details of the usage by looking into the tests (in "tests/") or following the examples (in "examples/").
