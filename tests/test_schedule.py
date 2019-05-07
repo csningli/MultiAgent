@@ -79,8 +79,8 @@ def test_schedule_get_gen() :
     Add Agent: <<multiagent.Agent name=0 mods_num=1>>
     Add Object: <<multiagent.Object name=0>>
     Schedule: <<multiagent.Schedule queue_len=2 last=0>>
-    Agent Generator: <class 'multiagent.Agent'>
-    Object Generator: <class 'multiagent.Object'>
+    Agent Generator: <class 'mas.multiagent.Agent'>
+    Object Generator: <class 'mas.multiagent.Object'>
     '''
     print("Initialization.")
     schedule = Schedule()

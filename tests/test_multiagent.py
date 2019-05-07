@@ -1,6 +1,6 @@
 
-# MultiAgent 2.0
-# (c) 2017-2018, NiL, csningli@gmail.com
+# MultiAgent
+# (c) 2017-2019, NiL, csningli@gmail.com
 
 import sys, os, time, subprocess
 

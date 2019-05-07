@@ -83,13 +83,13 @@ def test_oracle_touch() :
     Oracle: <<multiagent.OracleSpace objs_num=1 obts_num=1>>
     Touching points within distance 10 from center (0, 0).
     Block: (0.0, 0.0)
-    Block: (0.5, 0.5)
+    Block: (0.0, 1.0)
     '''
     oracle = OracleSpace(objs = [Object(name = "0"),], obts = [Obstacle(name = "0", a = (0.0, 1.0), b = (1.0, 0.0), radius = 2.0),])
     print("Oracle: %s" % oracle.info())
     print("Touching points within distance 10 from center (0, 0).")
     for block in oracle.touch(c = (0, 0), d = 10) :
-        print("Block: (%.1f, %.1f)" % (block[0], block[1]))
+        print("Block: (%.1f, %.1f)" % (block[2], block[3]))
 
 if __name__ == '__main__' :
     result = doctest.testmod()
