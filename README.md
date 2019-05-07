@@ -33,7 +33,7 @@ with the necessary packages installed.
 	[user @ MultiAgent/] conda env create -f env-py27.yml
 	[user @ MultiAgent/] source activate mas
 
-[*] When using Python without Anaconda, MultiAgent also works under Python 3.6,
+\* When using Python without Anaconda, MultiAgent also works under Python 3.6,
 in which case you should install the the necessary packages given in env-py36.yml.
 
 ## Basic Usage
