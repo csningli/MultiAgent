@@ -8,5 +8,5 @@ and check the poping up results.
 	(mas)[user @ MuliAgent/tests] python test_multiagent.py
 	...
 
-[*] Make sure you have properly downloaded MultiAgent and create the developing environment "mas",
+\* Make sure you have properly downloaded MultiAgent and create the developing environment "mas",
 as instructed in "MuliAgent/README.md".
