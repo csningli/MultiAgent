@@ -11,7 +11,7 @@ from mas.multiagent import *
 from mas.extension import ShowLabelObject
 
 
-AREA_LENGTH = 200
+AREA_SIZE = 200
 POS_ERROR = 10
 ANGLE_ERROR = 0.1
 MIN_SPEED = 5
@@ -23,7 +23,7 @@ class SteeringProcessModule(Module) :
         pos = self.mem.read("pos", None)
         target = self.mem.read("target", None)
         if pos is not None and (target is None or ppdist_l2(target, pos) <= POS_ERROR) :
-            self.mem.reg("target", (math.floor(random.random() * AREA_LENGTH), math.floor(random.random() * AREA_LENGTH)))
+            self.mem.reg("target", (math.floor(random.random() * AREA_SIZE), math.floor(random.random() * AREA_SIZE)))
 
 
 class SteeringMoveModule(ObjectModule) :
