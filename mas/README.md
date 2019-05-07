@@ -33,8 +33,8 @@ None.
 
 ## (class) Object
 
-<b>Object</b> is the most primary class in MultiAgent 2.0. It has a rigid body,
-and hence responsible for interacting with the physical context. In MultiAgent 2.0,
+<b>Object</b> is the most primary class in MultiAgent. It has a rigid body,
+and hence responsible for interacting with the physical context. In MultiAgent,
 there is only one shape for the objects, which is <i>circle</i>. The radius of the
 circle can only be configured while the initializing. For the other properties,
 you can change them through the corresponding interfaces.
@@ -95,12 +95,12 @@ and hence you should be cautious.
 		obj.draw(screen = screen)
 
 ## (class) Obstacle
-All <b>Obstacle</b>s in MultiAgent 2.0 are represendted by the segments with configurable thickness.
+All <b>Obstacle</b>s in MultiAgent are represendted by the segments with configurable thickness.
 
 You can define an obstacle by specifying the starting point and the
 finishing point. If you want the segment thicker, you can explicitly indicate the 'radius' parameter in the initialization.
 
-In MultiAgent 2.0, all obstacles are static, which means they can not be moved (and resized) once they are created.
+In MultiAgent, all obstacles are static, which means they can not be moved (and resized) once they are created.
 
 ### Initialization
 
