@@ -41,12 +41,13 @@ class SteeringMoveModule(ObjectModule) :
 
                     target_vel = (math.cos(angle), math.sin(angle))
                     if abs(angle_diff) <= ANGLE_ERROR :
-                        target_vel = vec2_scale(target_vel, min_max_bound(norm(array(pos_diff)), MIN_SPEED, MAX_SPEED))
+                        target_vel = vec2_scale(target_vel, min_max_bound(vec2_norm(pos_diff), MIN_SPEED, MAX_SPEED))
                     else :
                         target_avel = ANGLE_ERROR * angle_diff / abs(angle_diff)
                         print("target_avel:", target_avel)
                         resp.add_msg(Message(key = "avel", value = target_avel))
-                        target_vel = vec2_turn(vec2_scale(target_vel, vec2_norm(vel)), target_avel)
+                        target_vel = vec2_scale(target_vel, vec2_norm(vel))
+                        target_vel = vec2_turn(target_vel, target_avel)
 
                     print("target_vel:", target_vel)
                     resp.add_msg(Message(key = "vel", value = target_vel))
