@@ -1,21 +1,29 @@
 
-# MultiAgent 2.0
-# (c) 2017-2018, NiL, csningli@gmail.com
+# MultiAgent
+# (c) 2017-2019, NiL, csningli@gmail.com
 
 import sys, random, datetime, math
 random.seed(datetime.datetime.now())
 
-sys.path.append("../../2.0")
 
+sys.path.append("../..")
 from mas.multiagent import *
 from mas.extension import ShowLabelObject
+
+
+AREA_LENGTH = 200
+POS_ERROR = 10
+ANGLE_ERROR = 0.1
+MIN_SPEED = 5
+MAX_SPEED = 100
+
 
 class SteeringProcessModule(Module) :
     def process(self) :
         pos = self.mem.read("pos", None)
         target = self.mem.read("target", None)
-        if pos is not None and (target is None or ppdist_l2(target, pos) < 5) :
-            self.mem.reg("target", (math.floor(random.random() * 200), math.floor(random.random() * 200)))
+        if pos is not None and (target is None or ppdist_l2(target, pos) <= POS_ERROR) :
+            self.mem.reg("target", (math.floor(random.random() * AREA_LENGTH), math.floor(random.random() * AREA_LENGTH)))
 
 
 class SteeringMoveModule(ObjectModule) :
@@ -26,27 +34,22 @@ class SteeringMoveModule(ObjectModule) :
             vel = self.mem.read("vel", None)
             angle = self.mem.read("angle", None)
             if pos is not None and vel is not None and angle is not None :
-                vel_target = (target[0] - pos[0], target[1] - pos[1])
-                speed_target = norm(array(vel_target))
-                if speed_target > 0.001 :
-                    angle_target = math.acos(vel_target[0] / speed_target)
-                    if vel_target[1] <  0 :
-                        angle_target = - angle_target + 2 * math.pi
+                pos_diff = vec2_sub(target, pos)
+                if vec2_norm(pos_diff) > POS_ERROR :
+                    target_angle = vec2_angle(pos_diff)
+                    angle_diff = target_angle - angle
 
-                    avel_perform = angle_target - angle
-                    if abs(avel_perform) > 0.01 :
-                        if abs(avel_perform) < 0.5 :
-                            resp.add_msg(Message(key = "angle", value = angle_target))
-                        else :
-                            if avel_perform > 0 :
-                                avel_perform = max(0.001, avel_perform)
-                            else :
-                                avel_perform = min(-0.001, avel_perform)
-                            resp.add_msg(Message(key = "avel", value = avel_perform))
-                            speed_target = min(1, norm(array(vel)))
+                    target_vel = (math.cos(angle), math.sin(angle))
+                    if abs(angle_diff) <= ANGLE_ERROR :
+                        target_vel = vec2_scale(target_vel, min_max_bound(norm(array(pos_diff)), MIN_SPEED, MAX_SPEED))
+                    else :
+                        target_avel = ANGLE_ERROR * angle_diff / abs(angle_diff)
+                        print("target_avel:", target_avel)
+                        resp.add_msg(Message(key = "avel", value = target_avel))
+                        target_vel = vec2_turn(vec2_scale(target_vel, vec2_norm(vel)), target_avel)
 
-                    vel_perform = (math.cos(angle) * speed_target, math.sin(angle) * speed_target)
-                    resp.add_msg(Message(key = "vel", value = vel_perform))
+                    print("target_vel:", target_vel)
+                    resp.add_msg(Message(key = "vel", value = target_vel))
 
         super(SteeringMoveModule, self).act(resp)
 
@@ -58,8 +61,7 @@ class SteeringAgent(Agent) :
 
     @property
     def focus(self) :
-        focus_info = {
-        }
+        focus_info = {}
 
         target = self.mem.read("target", None)
         if target is not None :
