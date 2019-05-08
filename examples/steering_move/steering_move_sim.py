@@ -20,12 +20,14 @@ MIN_ASPEED = math.pi / 36.0
 MAX_ASPEED = math.pi / 6.0
 FRICTION_FACTOR = 0.2
 
+
 def turn_vel(v, f) :
     turn = vec2_rotate(v, HALF_PI)
     length = vec2_length(turn)
     if length > NON_ZERO_LOWER_BOUND :
         turn = vec2_scale(turn, f / length)
     return vec2_add(v, turn)
+
 
 class RandomTargetModule(Module) :
     def process(self) :
@@ -46,12 +48,11 @@ class SteeringMoveModule(ObjectModule) :
                 pos_diff = vec2_sub(target, pos)
                 if vec2_length(pos_diff) > POS_ERROR :
                     target_angle = vec2_angle(pos_diff)
-                    angle_diff = math.acos(pos_diff[0] / vec2_length(pos_diff))
-                    # target_angle - angle
-                    # if angle_diff > math.pi :
-                    #     angle_diff = angle_diff - 2 * math.pi
-                    # if angle_diff < - math.pi :
-                    #     angle_diff = angle_diff + 2 * math.pi
+                    angle_diff = target_angle - angle
+                    if angle_diff > math.pi :
+                        angle_diff = angle_diff - 2 * math.pi
+                    if angle_diff < - math.pi :
+                        angle_diff = angle_diff + 2 * math.pi
                     target_vel = (math.cos(angle), math.sin(angle))
                     if abs(angle_diff) <= ANGLE_ERROR :
                         target_vel = vec2_scale(target_vel, min_max_bound(vec2_length(pos_diff), MIN_SPEED, MAX_SPEED))

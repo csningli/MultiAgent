@@ -10,15 +10,27 @@ from mas.multiagent import *
 
 
 AREA_SIZE = 200
-POS_ERROR = 10
-
+POS_ERROR = 5
+MIN_SPEED = 100
+MAX_SPEED = 500
 
 class TargetModule(Module) :
+    def __init__(self) :
+        super(TargetModule, self).__init__()
+        self.index = 0
+        self.targets = [
+            (100, 0), (100, 100),
+            (0, 100), (-100, 100),
+            (-100, 0), (-100, -100),
+            (0, -100), (100, -100),
+        ]
+
     def process(self) :
         pos = self.mem.read("pos", None)
         target = self.mem.read("target", None)
         if pos is not None and (target is None or ppdist_l2(target, pos) <= POS_ERROR) :
-            self.mem.reg("target", (math.floor(random.random() * AREA_SIZE), math.floor(random.random() * AREA_SIZE)))
+            self.mem.reg("target", self.targets[self.index])
+            self.index = (self.index + 1) % len(self.targets)
 
 
 class SimpleMoveModule(ObjectModule) :
@@ -28,7 +40,7 @@ class SimpleMoveModule(ObjectModule) :
         if target is not None and pos is not None:
             diff = vec2_sub(target, pos)
             resp.add_msg(Message(key = "angle", value = vec2_angle(diff)))
-            resp.add_msg(Message(key = "vel", value = diff))
+            resp.add_msg(Message(key = "vel", value = vec2_min_max(vec2_scale(diff, 3), MIN_SPEED, MAX_SPEED)))
 
         super(SimpleMoveModule, self).act(resp)
 
