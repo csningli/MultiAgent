@@ -1,6 +1,6 @@
 
-# MultiAgent 2.0
-# (c) 2017-2018, NiL, csningli@gmail.com
+# MultiAgent
+# (c) 2017-2019, NiL, csningli@gmail.com
 
 import sys, os, os.path, copy, time, datetime, json, math, inspect, pickle, sqlite3, readline
 
@@ -854,28 +854,6 @@ class Agent(object) :
         self.__active = value
 
     @property
-    def focus(self) :
-        focus_info = {
-            "cmd" : str(self.__mem.read("cmd")),
-            "angle" : str(self.__mem.read("angle")),
-            "avel" : str(self.__mem.read("avel")),
-        }
-
-        pos = self.__mem.read("pos")
-        if pos is not None :
-            focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1])
-
-        vel = self.__mem.read("vel")
-        if vel is not None :
-            focus_info["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1])
-
-        force = self.__mem.read("force")
-        if force is not None :
-            focus_info["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1])
-
-        return focus_info
-
-    @property
     def mem(self) :
         return self.__mem
 
@@ -891,7 +869,6 @@ class Agent(object) :
     def memo(self, m) :
         self.active = bool(m["active"])
         self.__mem.content = m["__mem"]
-
 
     @property
     def reqt(self) :
@@ -927,6 +904,26 @@ class Agent(object) :
     def handle_cmds(self, cmds) :
         self.__mem.reg(key = "cmd", value = cmds)
 
+    def get_focus(self) :
+        focus_info = {
+            "cmd" : str(self.__mem.read("cmd")),
+            "angle" : str(self.__mem.read("angle")),
+            "avel" : str(self.__mem.read("avel")),
+        }
+
+        pos = self.__mem.read("pos")
+        if pos is not None :
+            focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1])
+
+        vel = self.__mem.read("vel")
+        if vel is not None :
+            focus_info["vel"] =  "(%4.2f, %4.2f)" % (vel[0], vel[1])
+
+        force = self.__mem.read("force")
+        if force is not None :
+            focus_info["force"] =  "(%4.2f, %4.2f)" % (force[0], force[1])
+
+        return focus_info
 
 class Shot(object) :
     def __init__(self) :
@@ -1752,7 +1749,7 @@ class Simulator(object) :
                             rfix_str_len("name:", 16, ':') + " " * 4 + rfix_str_len(str(focus_agent.name), 20),
                         ]
                         focus_info_width = len(focus_info[0])
-                        for key, value in focus_agent.focus.items() :
+                        for key, value in focus_agent.get_focus().items() :
                             if len(key) > 1 :
                                 focus_info.append(rfix_str_len("%s" % key + ":", 16, ':') + " " * 4 + rfix_str_len("%s" % value, 20))
                                 focus_info_width = len(focus_info[-1])

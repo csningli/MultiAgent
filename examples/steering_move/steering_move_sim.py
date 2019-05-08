@@ -79,9 +79,8 @@ class SteeringAgent(Agent) :
         super(SteeringAgent, self).__init__(name)
         self.mods = [SteeringMoveModule(), RandomTargetModule()]
 
-    @property
-    def focus(self) :
-        focus_info = {}
+    def get_focus(self) :
+        focus_info = super(SteeringAgent, self).get_focus()
 
         target = self.mem.read("target", None)
         if target is not None :

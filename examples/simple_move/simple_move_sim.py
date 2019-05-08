@@ -50,9 +50,8 @@ class SimpleMoveAgent(Agent) :
         super(SimpleMoveAgent, self).__init__(name)
         self.mods = [SimpleMoveModule(), TargetModule()]
 
-    @property
     def focus(self) :
-        focus_info = {}
+        focus_info = super(SimpleMoveAgent, self).get_focus() 
 
         target = self.mem.read("target", None)
         if target is not None :

@@ -5,10 +5,10 @@
 import sys, random, datetime, math
 random.seed(datetime.datetime.now())
 
-sys.path.append("../../2.0/py")
+sys.path.append("../..")
 
-from multiagent import *
-from utils import *
+from mas.multiagent import *
+from mas.utils import *
 
 amoebot_radius = 10.0
 
