@@ -1,6 +1,6 @@
 # MultiAgent Examples
 
-\* Before running any example, make sure you have created and activated the Anaconda environment 
+\* Before running any example, make sure you have created and activated the Anaconda environment
 "mas" as instructed in "MultiAgent/README.md".
 
 ## Run An Example
@@ -8,7 +8,7 @@ To run an example, say "amoebot", you need to at first change directory into "ex
 There is a README file for each of the examples. With it, you can find more information about
 the example. To run the example, you can simply "python" with the "\_sim.py" script.
 
-	[user @ ~] python amoebot_sim.py
+	(mas) [user @ MultiAgent/examples/amoebot/] python amoebot_sim.py
 
 Then a Pygame window will show up, inside which you can control the simulation using keybord keys.
 
@@ -29,7 +29,7 @@ The "\_sim.py" script accept at most one argument, which is restricted to be a s
 If you go with such an argument, the simulation saved in the file will be restored, and you can replay or
 continue the simulation. For example, the following command
 
-	[user @ ~] python amoebot_sim.py multiagent_20180406093531_320529.data
+	(mas) [user @ MultiAgent/examples/amoebot/] python amoebot_sim.py multiagent_20180406093531_320529.data
 
 will restore the simulation saved in "multiagent_20180406093531_320529.data".
 To remove the ".data" files, you can call the "clear.sh" script in the example's directory.
@@ -38,12 +38,17 @@ To remove the ".data" files, you can call the "clear.sh" script in the example's
 
 There is a special case when you provide the argument with the empty string, i.e. "".
 
-	[user @ ~] python amoebot_sim.py ""
+	(mas) [user @ MultiAgent/examples/amoebot/] python amoebot_sim.py ""
 
 In such case, a new simulation will be started just like the cases without any arguments. However,
 when the simulation is closed, the saving process is ignored, and hence there is no ".data" file generated.
 This design will make things easier during the development of a new simulation.
 
+## Test
+
+You can run the tests (in "test.py" under the example folder) of the example by
+
+	(mas) [user @ MultiAgent/examples/amoebot/] python test.py
 
 ## The List of Examples
 
