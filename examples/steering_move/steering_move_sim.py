@@ -14,8 +14,8 @@ from mas.extension import ShowLabelObject
 AREA_SIZE = 200
 POS_ERROR = 10
 MIN_SPEED = 10
-MAX_SPEED = 200
-ANGLE_ERROR = math.pi / 18.0
+MAX_SPEED = 500
+ANGLE_ERROR = math.pi / 36.0
 MIN_ASPEED = math.pi / 36.0
 MAX_ASPEED = math.pi / 6.0
 FRICTION_FACTOR = 0.2
@@ -34,6 +34,12 @@ class RandomTargetModule(Module) :
         pos = self.mem.read("pos", None)
         target = self.mem.read("target", None)
         if pos is not None and (target is None or ppdist_l2(target, pos) <= POS_ERROR) :
+            if target is not None :
+                finishes = self.mem.read("finishes", None)
+                if finishes is not None :
+                    self.mem.reg("finishes", finishes + 1)
+                else :
+                    self.mem.reg("finishes", 1)
             self.mem.reg("target", (math.floor(random.random() * AREA_SIZE), math.floor(random.random() * AREA_SIZE)))
 
 
@@ -55,7 +61,7 @@ class SteeringMoveModule(ObjectModule) :
                         angle_diff = angle_diff + 2 * math.pi
                     target_vel = (math.cos(angle), math.sin(angle))
                     if abs(angle_diff) <= ANGLE_ERROR :
-                        target_vel = vec2_scale(target_vel, min_max_bound(vec2_length(pos_diff), MIN_SPEED, MAX_SPEED))
+                        target_vel = vec2_scale(target_vel, min_max_bound(vec2_length(pos_diff) * 3, MIN_SPEED, MAX_SPEED))
                     else :
                         sign = angle_diff / abs(angle_diff)
                         target_avel = sign * min_max_bound(abs(angle_diff), MIN_ASPEED, MAX_ASPEED)
@@ -84,6 +90,10 @@ class SteeringAgent(Agent) :
         pos = self.mem.read("pos", None)
         if pos is not None :
             focus_info["pos"] =  "(%4.2f, %4.2f)" % (pos[0], pos[1])
+
+        finishes = self.mem.read("finishes", None)
+        if finishes is not None :
+            focus_info["finishes"] =  "%d" % finishes
 
         return focus_info
 
