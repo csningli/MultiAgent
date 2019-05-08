@@ -1,5 +1,8 @@
 # MultiAgent Examples
 
+\* Before running any example, make sure you have created and activated the Anaconda environment 
+"mas" as instructed in "MultiAgent/README.md".
+
 ## Run An Example
 To run an example, say "amoebot", you need to at first change directory into "examples/amoebot".
 There is a README file for each of the examples. With it, you can find more information about
@@ -34,6 +37,9 @@ To remove the ".data" files, you can call the "clear.sh" script in the example's
 ## "NO DATA" Option
 
 There is a special case when you provide the argument with the empty string, i.e. "".
+
+	[user @ ~] python amoebot_sim.py ""
+
 In such case, a new simulation will be started just like the cases without any arguments. However,
 when the simulation is closed, the saving process is ignored, and hence there is no ".data" file generated.
 This design will make things easier during the development of a new simulation.

@@ -13,12 +13,21 @@ from mas.extension import ShowLabelObject
 
 AREA_SIZE = 200
 POS_ERROR = 10
-ANGLE_ERROR = 0.1
-MIN_SPEED = 5
-MAX_SPEED = 100
+MIN_SPEED = 10
+MAX_SPEED = 200
+ANGLE_ERROR = math.pi / 18.0
+MIN_ASPEED = math.pi / 36.0
+MAX_ASPEED = math.pi / 6.0
+FRICTION_FACTOR = 0.2
 
+def turn_vel(v, f) :
+    turn = vec2_rotate(v, HALF_PI)
+    length = vec2_length(turn)
+    if length > NON_ZERO_LOWER_BOUND :
+        turn = vec2_scale(turn, f / length)
+    return vec2_add(v, turn)
 
-class SteeringProcessModule(Module) :
+class RandomTargetModule(Module) :
     def process(self) :
         pos = self.mem.read("pos", None)
         target = self.mem.read("target", None)
@@ -35,21 +44,24 @@ class SteeringMoveModule(ObjectModule) :
             angle = self.mem.read("angle", None)
             if pos is not None and vel is not None and angle is not None :
                 pos_diff = vec2_sub(target, pos)
-                if vec2_norm(pos_diff) > POS_ERROR :
+                if vec2_length(pos_diff) > POS_ERROR :
                     target_angle = vec2_angle(pos_diff)
-                    angle_diff = target_angle - angle
-
+                    angle_diff = math.acos(pos_diff[0] / vec2_length(pos_diff))
+                    # target_angle - angle
+                    # if angle_diff > math.pi :
+                    #     angle_diff = angle_diff - 2 * math.pi
+                    # if angle_diff < - math.pi :
+                    #     angle_diff = angle_diff + 2 * math.pi
                     target_vel = (math.cos(angle), math.sin(angle))
                     if abs(angle_diff) <= ANGLE_ERROR :
-                        target_vel = vec2_scale(target_vel, min_max_bound(vec2_norm(pos_diff), MIN_SPEED, MAX_SPEED))
+                        target_vel = vec2_scale(target_vel, min_max_bound(vec2_length(pos_diff), MIN_SPEED, MAX_SPEED))
                     else :
-                        target_avel = ANGLE_ERROR * angle_diff / abs(angle_diff)
-                        print("target_avel:", target_avel)
+                        sign = angle_diff / abs(angle_diff)
+                        target_avel = sign * min_max_bound(abs(angle_diff), MIN_ASPEED, MAX_ASPEED)
                         resp.add_msg(Message(key = "avel", value = target_avel))
-                        target_vel = vec2_scale(target_vel, vec2_norm(vel))
-                        target_vel = vec2_turn(target_vel, target_avel)
+                        target_vel = vec2_scale(target_vel, (1.0 - FRICTION_FACTOR) * max(MIN_SPEED, vec2_length(vel)))
+                        target_vel = turn_vel(target_vel, target_avel)
 
-                    print("target_vel:", target_vel)
                     resp.add_msg(Message(key = "vel", value = target_vel))
 
         super(SteeringMoveModule, self).act(resp)
@@ -58,7 +70,7 @@ class SteeringMoveModule(ObjectModule) :
 class SteeringAgent(Agent) :
     def __init__(self, name) :
         super(SteeringAgent, self).__init__(name)
-        self.mods = [SteeringMoveModule(), SteeringProcessModule()]
+        self.mods = [SteeringMoveModule(), RandomTargetModule()]
 
     @property
     def focus(self) :
