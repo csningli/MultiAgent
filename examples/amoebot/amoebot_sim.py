@@ -56,8 +56,8 @@ class AmoeObject(Object) :
 
     def draw(self, screen) :
         if self.visible == True :
-            p = Vec2d(self.pos)
-            rot = Vec2d(self.rot)
+            p = pymunk.Vec2d(self.pos)
+            rot = pymunk.Vec2d(self.rot)
             r = self.radius
             (width, height) = screen.get_size()
 
@@ -66,7 +66,7 @@ class AmoeObject(Object) :
             p.x = int(width / 2.0 + p.x)
             p.y = int(height / 2.0 - p.y)
 
-            head = Vec2d(rot.x, -rot.y) * self.radius * 0.9
+            head = pymunk.Vec2d(rot.x, -rot.y) * self.radius * 0.9
             pygame.draw.circle(screen, self.stroke_color, p, int(r), 2)
             pygame.draw.circle(screen, self.fill_color, p, int(r/2.0), 4)
 
@@ -81,11 +81,6 @@ class AmoeOracleSpace(OracleSpace) :
                 "body" : None,
                 "name" : None,
                 "pos" : None,
-                #"angle" : None,
-                #"rot" : None,
-                #"vel" : None,
-                #"avel" : None,
-                #"force" : None,
             }) and obj.name not in self.objs.keys() :
             self.objs[obj.name] = obj
             if str(obj.amoe_pos) not in self.__objs_indexing.keys() :
@@ -323,13 +318,13 @@ class AmoeFocusAgent(Agent) :
 class AmoeStaticAgent(AmoeFocusAgent) :
     def __init__(self, name) :
         super(AmoeStaticAgent, self).__init__(name)
-        self.config(mods = [])
+        self.mods = []
 
 
 class AmoeDynamicAgent(AmoeFocusAgent) :
     def __init__(self, name) :
         super(AmoeDynamicAgent, self).__init__(name)
-        self.config(mods = [AmoeDetectModule(), AmoeMoveModule(), AmoeProcessModule()])
+        self.mods = [AmoeDetectModule(), AmoeMoveModule(), AmoeProcessModule()]
 
 
 def run_sim(filename = None) :
