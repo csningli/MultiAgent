@@ -4,7 +4,7 @@
 
 import sys
 
-sys.path.append("../../2.0/")
+sys.path.append("../..")
 
 from mas.multiagent import *
 from mas.extension import ShowLabelObject
