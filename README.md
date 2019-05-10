@@ -10,7 +10,7 @@ analysis.
 
 # Documents
 Besides the overall README file, you can find the class reference in "mas/",
-and the corresponding introduction or tutorial in the independent folder of each examples.
+and the corresponding introduction or tutorial in the independent folder of each example.
 
 # Get Started
 To work with MultiAgent, at first you need to prepare the developing environment according to the following instructions.
