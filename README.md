@@ -1,5 +1,5 @@
 # MultiAgent
-MultiAgent is an open source framework for the simulation of the multiagent systems in the 2D plane.
+MultiAgent is an open source framework for the simulation of the multiagent systems in the plane.
 
 # Features
 - Agents are implemented as abstract controlling units. They can work without being associated
